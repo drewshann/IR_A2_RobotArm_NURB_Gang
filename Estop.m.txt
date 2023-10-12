@@ -1,0 +1,14 @@
+a = arduino();
+configurePin(a, 'D12', 'pullup');
+      
+e_status = readDigitalPin(a, 'D12');
+
+	if e_status == 1
+          %% Main in here I think??
+	else
+
+	  %%cancel Program & Output error message
+	end
+
+%% If we do destructor stuff 
+%% clear a
