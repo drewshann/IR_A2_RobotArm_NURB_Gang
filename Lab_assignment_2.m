@@ -5,6 +5,7 @@ classdef Lab_assignment_2 < handle
         rob2;
         current_item;
         items_pos;
+        cube;
     end
 
     properties(Constant)
@@ -19,10 +20,20 @@ classdef Lab_assignment_2 < handle
                             transl(-0.4,0.1,0.3)*trotx(-pi), ...
                             transl(-0.2,0.2,0.5)*trotx(-pi), ...
                             transl(0,0,0.6)*trotx(-pi)};
+        
+        % % Cell array for the links of the UR3 with q as all zeros
+        % UR3_links = {eye(4), ...                                                        % Base transform
+        %             trotz(0) * transl(0,0,0.1519) * transl(0,0,0) * trotx(pi/2), ...    % joint0To1
+        %             trotz(0) * transl(0,0,0) * transl(-0.24365,0,0) * trotx(0), ...  % joint1To2
+        %             trotz(0) * transl(0,0,0) * transl(-0.21325,0,0) * trotx(0), ...  % joint2To3
+        %             trotz(0) * transl(0,0,0.11235) * transl(0,0,0) * trotx(pi/2), ...% joint3To4
+        %             trotz(0) * transl(0,0,0.08535) * transl(0,0,0) * trotx(-pi/2), ...% joint4To5
+        %             trotz(0) * transl(0,0,0.0819) * transl(0,0,0) * trotx(0), ...    % joint5To6
+        %             eye(4)};                                                            % Tool Transform
     end
 
     methods
-%% Constructor
+        %% Constructor
         function self = Lab_assignment_2(robot1, robot2)
             % Create the environment within the constructor
             if nargin > 0
@@ -35,11 +46,13 @@ classdef Lab_assignment_2 < handle
 
             end
 
+            hold on
+            self.cube = PlaceObject("BasicObstacle.ply",[5.0,0,0]);
             self.setup_environment();
         end
 
 
-%% Change the Transform/pose relative to robot base into q values
+        %% Change the Transform/pose relative to robot base into q values
         function q1 = transformation2Q_rob1(self, transform)
             % Have a try catch statement to tell whether the ikine function
             % converges or not (ie end effector position is achievable)
@@ -53,7 +66,7 @@ classdef Lab_assignment_2 < handle
             q2 = self.rob2.model.ikcon(transform);
         end
 
-%% Change the robot q values into an end effector transform
+        %% Change the robot q values into an end effector transform
         function transform1 = q2Transform_rob1(self, q)
             transform1 = self.rob1.model.fkine(q);
         end
@@ -63,7 +76,7 @@ classdef Lab_assignment_2 < handle
         end
 
 
-%% Transform function, can be used to move the robots from one orientation to the next
+        %% Transform function, can be used to move the robots from one orientation to the next
         function transform(self, start_q_rob1, end_q_rob1, start_q_rob2, end_q_rob2)
 
             trsteps = 50;
@@ -84,7 +97,7 @@ classdef Lab_assignment_2 < handle
             
         end
 
-%% Function used to begin picking up apples autonomously
+        %% Function used to begin picking up apples autonomously
         function pickApples(self)
             num_items = size(self.test_multiple_pos);
 % Idea for how to have both robots picking up apples at the same time:
@@ -121,15 +134,96 @@ classdef Lab_assignment_2 < handle
             end
         end
 
-%% Function used to check for collisions and return a true/false if the robot will collide with anything, including the other robot
-        function collision = checkCollisions(self)
+        
+        %% Function used to check for collisions and return a true/false if the robot will collide with anything, including the other robot
+        function collision = checkCollisions(self, current_robq)
+            
+            EllipsoidCenterPoints = cell(1,7);
+            transforms = cell(1,7);
+            NumberOfLinks = size(self.rob1.model.links);
+            current_robq = zeros(1,6);
+
+            % Temporary ellipsoid points
+            [X,Y,Z] = ellipsoid(0,0,0,0.1,0.1,0.1);
+            EllipsoidPoints = [X(:),Y(:),Z(:)];
+
+            for i = 1:NumberOfLinks(1,2)+1
+                transforms{i} = self.manual_fkine_rob1(current_robq,i);
+                EllipsoidCenterPoints{i} = transforms{i}(1:3,4);
+
+
+                EllipsoidPointsAndOnes = [transforms{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+            end
             
             
+
+            % verts = [get(self.cube,'Vertices'), ones(size(get(self.cube,'Vertices'),1), 1)];
+            % verts(:,4) = [];
+            % disp(verts);
+            % 
+            % cubeAtOigin_h = plot3(verts(:,1),verts(:,2),verts(:,3),'r.');
+
+            % So the plan is (Check Lab6Solution question 2 and Lab6_collision_detection):
+                % - Get the vertices of the ply file, if it's a complicated
+                % shape then just use the straight vertices, if not then
+                % create a mesh grid with reasonable number of points. Then
+                % a point cloud of the object.
+
+                % - Get the algebraic distance and check whether within 1
+
+                % - If not then keep moving, if it is then stop. Might need
+                % to actively avoid certain zones, gotta do stopping first.
+
+                % Also need to create an ellipsoid around the robot arm
+
+            collision = false;
         end
 
-%% Singularity Detection function and returns a cell array of the singularity locations
+        %% Singularity Detection function and returns a cell array of the singularity locations
         function singularity = singularityLocations(self)
 
+        end
+
+
+        function Transform = manual_fkine_rob1(self,q,return_link)
+
+            if return_link > 7  % 6 degrees of freedom and a tool transform
+                disp("The transform for the link number cannot be returned as it exceeds the UR3 robot's links");
+                return
+            end
+            linksArray = {self.rob1.model.base, ...
+                        trotz(q(1)) * transl(0,0,0.1519) * transl(0,0,0) * trotx(pi/2), ...
+                        trotz(q(2)) * transl(0,0,0) * transl(-0.24365,0,0) * trotx(0), ...
+                        trotz(q(3)) * transl(0,0,0) * transl(-0.21325,0,0) * trotx(0), ...
+                        trotz(q(4)) * transl(0,0,0.11235) * transl(0,0,0) * trotx(pi/2), ...
+                        trotz(q(5)) * transl(0,0,0.08535) * transl(0,0,0) * trotx(-pi/2), ...
+                        trotz(q(6)) * transl(0,0,0.0819) * transl(0,0,0) * trotx(0), ...
+                        eye(4)};
+            % linksArray = {base_tr, joint1To2, joint2To3, joint3To4, joint4To5, joint5To6, joint6To7, tool_tr};
+            
+
+            Transform = linksArray{1}.T;
+            for i = 2:return_link+1
+                Transform = Transform * linksArray{i};
+            end
+
+            % End effector Transform = base_tr*joint0To1*joint1To2*joint2To3*joint3To4*joint4To5*joint5To6*joint6To7*tool_tr; 
+        end
+
+
+        function plot_robot_no_ply(self)
+            L1 = Link('d',0.1519,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]), 'offset',0);
+            L2 = Link('d',0,'a',-0.24365,'alpha',0,'qlim', deg2rad([-360 360]), 'offset',0);
+            L3 = Link('d',0,'a',-0.21325,'alpha',0,'qlim', deg2rad([-360 360]), 'offset', 0);
+            L4 = Link('d',0.11235,'a',0,'alpha',pi/2,'qlim',deg2rad([-360 360]),'offset', 0);
+            L5 = Link('d',0.08535,'a',0,'alpha',-pi/2,'qlim',deg2rad([-360,360]), 'offset',0);
+            L6 = Link('d',0.0819,'a',0,'alpha',0,'qlim',deg2rad([-360,360]), 'offset', 0);
+             
+            robot = SerialLink([L1,L2,L3,L4,L5,L6],'name','random_robot');
+
+            robot.plot(zeros(1,6));
         end
 
 
@@ -138,7 +232,7 @@ classdef Lab_assignment_2 < handle
     methods(Static)
 
         function setup_environment()
-            % Create the environment in here
+            
         end
     end
 
