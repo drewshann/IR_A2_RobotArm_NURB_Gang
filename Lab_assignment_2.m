@@ -134,14 +134,14 @@ classdef Lab_assignment_2 < handle
             end
         end
 
-        
+
         %% Function used to check for collisions and return a true/false if the robot will collide with anything, including the other robot
-        function collision = checkCollisions(self, current_robq)
+        function collision = checkCollisions(self)
             
             EllipsoidCenterPoints = cell(1,7);
             transforms = cell(1,7);
             NumberOfLinks = size(self.rob1.model.links);
-            current_robq = zeros(1,6);
+            current_robq = self.rob1.model.getpos;
 
             % Temporary ellipsoid points
             [X,Y,Z] = ellipsoid(0,0,0,0.1,0.1,0.1);
