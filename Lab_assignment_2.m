@@ -20,6 +20,14 @@ classdef Lab_assignment_2 < handle
                             transl(-0.4,0.1,0.3)*trotx(-pi), ...
                             transl(-0.2,0.2,0.5)*trotx(-pi), ...
                             transl(0,0,0.6)*trotx(-pi)};
+
+        ur3_link_sizes = {[0.05,0.05,0.1519], ...
+                        [0.24365,0.05,0.05], ...
+                        [0.21325,0.05,0.05], ...
+                        [0.05,0.05,0.11235], ...
+                        [0.05,0.05,0.08535], ...
+                        [0.05,0.05,0.0819], ...
+                        [0.05,0.05,0.05]};
         
         % % Cell array for the links of the UR3 with q as all zeros
         % UR3_links = {eye(4), ...                                                        % Base transform
@@ -140,19 +148,39 @@ classdef Lab_assignment_2 < handle
             
             EllipsoidCenterPoints = cell(1,7);
             transforms = cell(1,7);
+            midpoints = cell(1,7);
             NumberOfLinks = size(self.rob1.model.links);
             current_robq = self.rob1.model.getpos;
 
-            % Temporary ellipsoid points
-            [X,Y,Z] = ellipsoid(0,0,0,0.1,0.1,0.1);
-            EllipsoidPoints = [X(:),Y(:),Z(:)];
+            % Initial ellipsoid centerpoint
 
             for i = 1:NumberOfLinks(1,2)+1
+                [X,Y,Z] = ellipsoid(0,0,0,self.ur3_link_sizes{i}(1),self.ur3_link_sizes{i}(2),self.ur3_link_sizes{i}(3));
+                EllipsoidPoints = [X(:),Y(:),Z(:)];
+
                 transforms{i} = self.manual_fkine_rob1(current_robq,i);
                 EllipsoidCenterPoints{i} = transforms{i}(1:3,4);
+                disp(i);
+                if i == 1
+                    midpoints{i} = transforms{i};
+                    disp("The current link transform (pre midpoint adjustement) is");
+                    disp(transforms{i});
+                    midpoints{i}(1:3,4) = transforms{i}(1:3,4)/2;
+                    disp("The current link transform (post midpoint adjustement) is");
+                    disp(transforms{i});
+
+                else
+                    midpoints{i} = transforms{i};
+                    disp("The current link transform is");
+                    disp(transforms{i});
+                    disp("The previous link transform is");
+                    disp(transforms{i-1});
+                    midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
+                    disp((transforms{i}(1:3,4) - transforms{i-1}(1:3,4))/2);
+                end
 
 
-                EllipsoidPointsAndOnes = [transforms{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
                 updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
                 plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
             end
