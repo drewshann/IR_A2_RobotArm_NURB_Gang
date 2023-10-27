@@ -25,15 +25,15 @@ function self = KUKA(baseTr)
 
 %% CreateModel
         function CreateModel(self)
-            link(1) = Link('d',0.1519,'a',0,'alpha',-pi/2,'theta',pi/2,'qlim',deg2rad([-170 170]), 'offset',0);
-            link(2) = Link('d',0,'a',-0.24365,'alpha',0,'theta',-pi/2,'qlim', deg2rad([-190 45]), 'offset',0);
+            link(1) = Link('a',0,'alpha',-pi/2,'theta',pi/2,'qlim',deg2rad([-170 170]), 'offset',0);
+            link(2) = Link('a',-0.24365,'alpha',0,'theta',-pi/2,'qlim', deg2rad([-190 45]), 'offset',0);
             link(3) = Link('d',0,'a',-0.21325,'alpha',pi/2,'qlim', deg2rad([-120 156]), 'offset', 0);
             link(4) = Link('d',0.11235,'a',0,'alpha',-pi/2,'qlim',deg2rad([-185 185]),'offset', 0);
             link(5) = Link('d',0.08535,'a',0,'alpha',pi/2,'qlim',deg2rad([-120,120]), 'offset',0);
             link(6) = Link('d',0.0819,'a',0,'alpha',pi,'qlim',deg2rad([-350,350]), 'offset', 0);
              
 
-            self.model = SerialLink(link,'name',self.name);
+self.model = SerialLink(link, 'name', self.name);
 
         end   
 
