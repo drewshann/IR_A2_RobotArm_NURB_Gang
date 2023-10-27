@@ -8,7 +8,7 @@ e_status = readDigitalPin(a, 'D12');
 	else
 
 	  %%cancel Program & Output error message
-	end
+	endv
 
 %% If we do destructor stuff 
 %% clear a

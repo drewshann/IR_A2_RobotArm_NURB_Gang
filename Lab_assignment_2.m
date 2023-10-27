@@ -6,9 +6,11 @@ classdef Lab_assignment_2 < handle
         current_item;
         items_pos;
         cube;
+        robot;
     end
 
     properties(Constant)
+        trsteps = 50;
         initialGuessQRob1 = [-0.7849   -1.7363    0.0001    0.1327   -1.6231    0.7849];
 
         apple_pos1 = [deg2rad(43.2), deg2rad(-43.2), deg2rad(-14.4), deg2rad(28.8), deg2rad(43.2), deg2rad(28.8)];  % From teach
@@ -85,24 +87,63 @@ classdef Lab_assignment_2 < handle
 
 
         %% Transform function, can be used to move the robots from one orientation to the next
-        function transform(self, start_q_rob1, end_q_rob1, start_q_rob2, end_q_rob2)
+        function transform_interpolation(self, start_q_rob1, end_q_rob1, start_q_rob2, end_q_rob2)
 
-            trsteps = 50;
             % robot.model.getpos
             % UR3 = UR3_control.robot;
             
-            r1Traj = jtraj(start_q_rob1,end_q_rob1,trsteps);
+            r1Traj = jtraj(start_q_rob1,end_q_rob1,self.trsteps);
             % r2Traj = jtraj(start_q_rob2,end_q_rob2,trsteps);
 
-            for i = 1:trsteps
+            for i = 1:self.trsteps
                 % r2.model.fkine(UR3.model.getpos)
                 self.rob1.model.animate(r1Traj(i,:));
                 % self.rob2.model.animate(r2Traj(i,:));
                 % self.update_gripper_pos();
 
-                drawnow()       
+                drawnow()
             end
             
+        end
+
+        %% Robotic control via Resolved Motion Rate Control
+        function rmrc(self, start_q_rob1, end_q_rob1, start_q_rob2, end_q_rob2)
+            deltaT = 0.05;
+            x1 = [start_q_rob1]';
+            x2 = [end_q_rob1]';
+
+            % Assign memory and interpolate two points from x1 to x2
+            x = zeros(self.rob1.model.n,self.trsteps);
+            s = lspb(0,1,self.trsteps); 
+            for i = 1:self.trsteps
+                x(:,i) = x1*(1-s(i)) + s(i)*x2;
+            end
+
+
+            qMatrix = nan(self.trsteps,self.rob1.model.n);
+            end_eff = self.rob1.model.fkine(self.rob1.model.getpos);
+            qMatrix(1,:) = self.transformation2Q_rob1(end_eff);
+
+            for i = 1:self.trsteps-1
+                % Calculate velocity at discrete time step
+                xdot = (x(:,i+1) - x(:,i))/deltaT;
+                % Get the Jacobian at the current state
+                J = self.rob1.model.jacob0(qMatrix(i,:));
+                % Take only first 6 rows
+                J = J(self.rob1.model.n,:);
+                qdot = inv(J)*xdot;   % Solve velocitities via RMRC
+                qMatrix(i+1,:) =  qMatrix(i,:) + deltaT*qdot';  % Update next joint state
+
+            end
+
+            for i = 1:self.trsteps
+                self.rob1.model.animate(qMatrix(i,:));
+                % hold on
+                % end_eff = self.rob1.model.fkine(qMatrix(i,:));
+                % end_eff = end_eff.T;
+                % plot3(end_eff(1,4),end_eff(2,4),end_eff(3,4),'r.');
+                drawnow();
+            end
         end
 
         %% Function used to begin picking up apples autonomously
@@ -136,7 +177,7 @@ classdef Lab_assignment_2 < handle
                 % Open gripper and transform between current position and
                 % starting brick position
                 % self.open_gripper();
-                self.transform(qPos1,qPos2,qPos1,qPos1);
+                self.transform_interpolation(qPos1,qPos2,qPos1,qPos1);
 
 
             end
@@ -162,13 +203,30 @@ classdef Lab_assignment_2 < handle
                 EllipsoidCenterPoints{i} = transforms{i}(1:3,4);
                 disp(i);
                 if i == 1
-                    midpoints{i} = transforms{i};
+                    midpoints{i} = transforms{i}*trotx(-pi/2);
                     disp("The current link transform (pre midpoint adjustement) is");
                     disp(transforms{i});
                     midpoints{i}(1:3,4) = transforms{i}(1:3,4)/2;
                     disp("The current link transform (post midpoint adjustement) is");
                     disp(transforms{i});
 
+                elseif i == 4
+                    midpoints{i} = transforms{i}*trotx(-pi/2);
+                    disp("The current link transform is");
+                    disp(transforms{i});
+                    disp("The previous link transform is");
+                    disp(transforms{i-1});
+                    midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
+                    disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
+
+                elseif i == 5
+                    midpoints{i} = transforms{i}*trotx(pi/2);
+                    disp("The current link transform is");
+                    disp(transforms{i});
+                    disp("The previous link transform is");
+                    disp(transforms{i-1});
+                    midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
+                    disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
                 else
                     midpoints{i} = transforms{i};
                     disp("The current link transform is");
@@ -176,7 +234,7 @@ classdef Lab_assignment_2 < handle
                     disp("The previous link transform is");
                     disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    disp((transforms{i}(1:3,4) - transforms{i-1}(1:3,4))/2);
+                    disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
                 end
 
 
@@ -192,6 +250,22 @@ classdef Lab_assignment_2 < handle
             % disp(verts);
             % 
             % cubeAtOigin_h = plot3(verts(:,1),verts(:,2),verts(:,3),'r.');
+            % 
+            % for i = 1:NumberOfLinks(1,2)+1
+            %     d = ((verts(:,1)-midpoints{i}(1,4))/self.ur3_link_sizes{i}(1)).^2 ...
+            %       + ((verts(:,2)-midpoints{i}(2,4))/self.ur3_link_sizes{i}(2)).^2 ...
+            %       + ((verts(:,3)-midpoints{i}(3,4))/self.ur3_link_sizes{i}(3)).^2;
+            % 
+            %     disp(d);
+            %     for j = 1:size(d)
+            %         disp(j)
+            %         if d(j) < 1
+            %             disp("intersection detected");
+            %         end
+            %     end
+            % 
+            % end
+            
 
             % So the plan is (Check Lab6Solution question 2 and Lab6_collision_detection):
                 % - Get the vertices of the ply file, if it's a complicated
@@ -249,9 +323,9 @@ classdef Lab_assignment_2 < handle
             L5 = Link('d',0.08535,'a',0,'alpha',-pi/2,'qlim',deg2rad([-360,360]), 'offset',0);
             L6 = Link('d',0.0819,'a',0,'alpha',0,'qlim',deg2rad([-360,360]), 'offset', 0);
              
-            robot = SerialLink([L1,L2,L3,L4,L5,L6],'name','random_robot');
+            self.robot = SerialLink([L1,L2,L3,L4,L5,L6],'name','random_robot');
 
-            robot.plot(zeros(1,6));
+            self.robot.plot(zeros(1,6));
         end
 
 
