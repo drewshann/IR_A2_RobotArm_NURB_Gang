@@ -328,13 +328,24 @@ classdef Lab_assignment_2 < handle
             self.robot.plot(zeros(1,6));
         end
 
+    %% Environment Setup
+        function setup_environment(self)
+            hold on
+            Truck = PlaceObject('NewTruckPlatform.ply',[0 0 0]);
+            Apple1 = PlaceObject('NewApple.ply',[0 1.2 1]);
+            Apple2 = PlaceObject('NewApple.ply',[1 1.2 1.2]);
+            Apple3 = PlaceObject('NewApple.ply',[1.2 1.2 1.4]);
+            Apple4 = PlaceObject('NewApple.ply',[0.5 1.2 1]);
+            Apple5 = PlaceObject('NewApple.ply',[-0.5 1.2 1.5]);
+            Apple6 = PlaceObject('NewApple.ply',[-1 1.2 1.2]);
+            Tree1 = PlaceObject('NewTree.ply',[-1 1.5 0]);
+            Tree2 = PlaceObject('NewTree.ply',[0 1.5 0]);
+            Tree3 = PlaceObject('NewTree.ply',[1 1.5 0]);
 
-    end
-
-    methods(Static)
-
-        function setup_environment()
-            
+            self.rob1.model.base = transl([0.5 0.4 0.75]);
+            self.rob1.model.animate(deg2rad([0 -90 0 0 0 0]))
+            axis([-2 2 -2 2 0 2.2]);
+            hold off
         end
     end
 
