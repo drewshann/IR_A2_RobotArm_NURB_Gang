@@ -127,10 +127,14 @@ classdef Lab_assignment_2 < handle
         function q1 = transformation2Q_rob1(self, transform, InitialGuess)
             % Have a try catch statement to tell whether the ikine function
             % converges or not (ie end effector position is achievable)
+            if numel(InitialGuess) ~= 6
+                q1 = self.rob1.model.ikcon(transform);
+            else
+                q1 = self.rob1.model.ikcon(transform,InitialGuess); %, self.initialGuessQRob1);
+            end
 
             % Run fkine after ikcon to test whether we got the correct end
             % effector position
-            q1 = self.rob1.model.ikcon(transform,InitialGuess); %, self.initialGuessQRob1);
         end
 
         function q2 = transformation2Q_rob2(self, transform)
@@ -509,11 +513,6 @@ classdef Lab_assignment_2 < handle
                 % Also need to create an ellipsoid around the robot arm
 
             
-        end
-
-        %% Singularity Detection function and returns a cell array of the singularity locations
-        function singularity = singularityLocations(self)
-
         end
 
 
