@@ -15,7 +15,7 @@ function self = KUKA(baseTr)
             self.model.base = self.model.base.T * baseTr * trotx(pi/2) * troty(pi/2);
             %self.model.base = transl(0,0,0.5) * baseTr * trotx(pi/2) *   %troty(pi/2); testing
             
-            %self.PlotAndColourRobot();
+            self.PlotAndColourRobot();
         end
 
 %% CreateModel
@@ -26,12 +26,12 @@ function self = KUKA(baseTr)
             link(3) = Link('d',0,'a',-0.21325,'alpha',0,'qlim', deg2rad([-180 180]), 'offset', 0);
             link(4) = Link('d',0.11235,'a',0,'alpha',pi/2,'qlim',deg2rad([-180 180]),'offset', 0);
             link(5) = Link('d',0.08535,'a',0,'alpha',-pi/2,'qlim',deg2rad([-360,360]), 'offset',0);
-            link(6) = Link('d',0.0819,'a',0,'alpha',0,'qlim',deg2rad([-360,360]), 'offset', 0);
+
              
             %link(1).qlim = [-0.8, -0.01];
 
             self.model = SerialLink(link,'name',"KUKA");
-            q = zeros(1,6);
+            q = zeros(1,5);
             workspace = [-1 1 -1 1 0 2];
             scale = 1;
             self.model.plot(q,'workspace',workspace,'scale',scale)

@@ -16,14 +16,10 @@ final_q = obj.transformation2Q_rob1(final_pos);
 disp("Does it get to here?");
 % obj.rmrc(start_q,final_q,start_q,start_q);
 
+obj.pickApples()
 
 
-
-check_coll_start_cube = transl(0.5,-0.5,0.4);
-check_coll_end_cube = transl(0.5,0.5,0.4);
-check_coll_startq_cube = obj.transformation2Q_rob1(check_coll_start_cube);
-check_coll_endq_cube = obj.transformation2Q_rob1(check_coll_end_cube);
-
+% obj.GraphicalUserInterface();
 
 % obj.pickApples()
 % start_q = obj.rob1.model.getpos();
