@@ -1,11 +1,12 @@
 classdef GraphicalUserInterface
     
     properties
+        assignment;
+        % ur5;
+        % kukaAgilus;
+
         fig1;
         fig2;
-
-        ur3;
-        robot;
 
         panel1;
         panel2;
@@ -90,20 +91,23 @@ classdef GraphicalUserInterface
         function obj = GraphicalUserInterface()
             % obj.fig1 = figure('Position', [100, 100, 600, 400], 'Name', 'Fruit Picking Robot');
             % hold on
-            % obj.ur3 = UR3;
-            % obj.robot = UR3;
+            % obj.ur5 = UR5;
+            % obj.kukaAgilus = UR5;
             % hold off
+            obj.fig1 = figure('Position', [100, 100, 600, 400], 'Name', 'Fruit Picking Robot');
+            obj.assignment = Lab_assignment_2();
 
             obj.fig2 = figure('Position', [100, 100, 600, 400], 'Name', 'Fruit Picking GUI');
             obj = obj.GUIsetup();
+            % figure(obj.fig1);
             obj.setupCallbacks();
         end
 
         function obj = GUIsetup(obj)
-            obj.panel1 = uipanel(obj.fig2,'Position',[0.25 0.5125 0.725 0.4625],'Title','UR3','BorderType','etchedin','TitlePosition','centertop');
-            % obj.panel1 = uipanel(obj.fig2,'Position',[0.25 0.025 0.35 0.95],'Title','UR3','BorderType','etchedin','TitlePosition','centertop');
-            obj.panel2 = uipanel(obj.fig2,'Position',[0.25 0.025 0.725 0.4625],'Title','Robot','BorderType','etchedin','TitlePosition','centertop');
-            % obj.panel2 = uipanel(obj.fig2,'Position',[0.625 0.025 0.35 0.95],'Title','Robot','BorderType','etchedin','TitlePosition','centertop');
+            obj.panel1 = uipanel(obj.fig2,'Position',[0.25 0.5125 0.725 0.4625],'Title','UR5','BorderType','etchedin','TitlePosition','centertop');
+            % obj.panel1 = uipanel(obj.fig2,'Position',[0.25 0.025 0.35 0.95],'Title','UR5','BorderType','etchedin','TitlePosition','centertop');
+            obj.panel2 = uipanel(obj.fig2,'Position',[0.25 0.025 0.725 0.4625],'Title','Kuka Agilus','BorderType','etchedin','TitlePosition','centertop');
+            % obj.panel2 = uipanel(obj.fig2,'Position',[0.625 0.025 0.35 0.95],'Title','Kuka Agilus','BorderType','etchedin','TitlePosition','centertop');
             obj.panel3 = uipanel(obj.fig2,'Position',[0.025 0.025 0.2 0.95],'Title','Update Buttons','BorderType','etchedin','TitlePosition','centertop');
             
             obj.startButton = uicontrol('Style', 'pushbutton', 'String', "START", ...
@@ -236,6 +240,14 @@ classdef GraphicalUserInterface
 
         function startButtonCallback(obj,~,~)
             % Startup fruit picking imlpementation
+            set(obj.P1slider1, 'Value', 0);
+            set(obj.P1slider2, 'Value', 0);
+            set(obj.P1slider3, 'Value', 0);
+            set(obj.P1slider4, 'Value', 0);
+            set(obj.P1slider5, 'Value', 0);
+            set(obj.P1slider6, 'Value', 0);
+
+            obj.assignment.pickApples(obj.fig1);
         end
 
         function pauseButtonCallback(obj,~,~)
@@ -256,7 +268,7 @@ classdef GraphicalUserInterface
 
         function P1slidersCallback(obj,~,~)
             % Implement functionality to change slider automatically while it is moving during startup mission
-            % Connect slider values to ur3 robot in mission
+            % Connect slider values to ur5 robot in mission
             val1 = get(obj.P1slider1, 'Value');
             val2 = get(obj.P1slider2, 'Value');
             val3 = get(obj.P1slider3, 'Value');
@@ -270,7 +282,7 @@ classdef GraphicalUserInterface
             set(obj.P1edit5, 'String', num2str(round(val5,2)));
             set(obj.P1edit6, 'String', num2str(round(val6,2)));
 
-            obj.ur3.model.animate(deg2rad([val1,val2,val3,val4,val5,val6]));
+            obj.assignment.rob1.model.animate(deg2rad([val1,val2,val3,val4,val5,val6]));
         end
 
         function P2slidersCallback(obj,~,~)
@@ -289,7 +301,7 @@ classdef GraphicalUserInterface
             set(obj.P2edit5, 'String', num2str(round(val5,2)));
             set(obj.P2edit6, 'String', num2str(round(val6,2)));
 
-            obj.robot.model.animate(deg2rad([val1,val2,val3,val4,val5,val6]));
+            obj.assignment.rob2.model.animate(deg2rad([val1,val2,val3,val4,val5,val6]));
         end
 
         function P1editsCallback(obj,~,~)

@@ -3,7 +3,7 @@ clear all
 close all
 
 
-
+hold on
 obj = Lab_assignment_2();
 
 % obj.rob1.model.teach();
@@ -12,3 +12,8 @@ obj = Lab_assignment_2();
 % obj.transform(test_pos_1, test_pos_2, test_pos_2, test_pos_2);
 
 obj.pickApples()
+
+
+% obj.GraphicalUserInterface();
+
+hold off
