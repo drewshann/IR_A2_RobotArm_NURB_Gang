@@ -32,6 +32,14 @@ classdef Lab_assignment_2 < handle
                         [0.05,0.05,0.0819], ...
                         [0.05,0.05,0.05]};
 
+        ur5_link_sizes_for_collisions = {[0.05,0.05,0.089159/2.5], ...
+                                        [-0.425/2,0.05,0.05], ...
+                                        [-0.39225/2,0.05,0.05], ...
+                                        [0.05,0.05,0.10915/2], ...
+                                        [0.05,0.05,0.09465/2], ...
+                                        [0.05,0.05,0.0823/2], ...
+                                        [0.05,0.05,0.05]};   
+
         ur5_link_sizes = {[0.05,0.05,0.089159], ...
                         [-0.425,0.05,0.05], ...
                         [-0.39225,0.05,0.05], ...
@@ -67,7 +75,7 @@ classdef Lab_assignment_2 < handle
             end
 
             hold on
-            % self.cube = PlaceObject("BasicObstacle.ply",[5.0,0,0]);
+            % self.cube = PlaceObject("BasicObstacle.ply",[0.5,0,0.2]);
             self.setup_environment();
         end
 
@@ -79,7 +87,7 @@ classdef Lab_assignment_2 < handle
 
             % Run fkine after ikcon to test whether we got the correct end
             % effector position
-            q1 = self.rob1.model.ikcon(transform, self.initialGuessQRob1);
+            q1 = self.rob1.model.ikcon(transform);%, self.initialGuessQRob1);
         end
 
         function q2 = transformation2Q_rob2(self, transform)
@@ -110,7 +118,11 @@ classdef Lab_assignment_2 < handle
                 self.rob1.model.animate(r1Traj(i,:));
                 % self.rob2.model.animate(r2Traj(i,:));
                 % self.update_gripper_pos();
-                self.checkCollisions();
+                collision_check = self.checkCollisions();
+                if collision_check == 1
+                    disp("collision detected!!!")
+                    break
+                end
 
                 drawnow()
             end
@@ -245,85 +257,142 @@ classdef Lab_assignment_2 < handle
         %% Function used to check for collisions and return a true/false if the robot will collide with anything, including the other robot
         function collision = checkCollisions(self)
             
+            collision = 0;
             EllipsoidCenterPoints = cell(1,7);
             transforms = cell(1,7);
             midpoints = cell(1,7);
             NumberOfLinks = size(self.rob1.model.links);
-            disp(["Number of links on the robot: ", NumberOfLinks]);
+            % disp(["Number of links on the robot: ", NumberOfLinks]);
             current_robq = self.rob1.model.getpos;
 
             % Initial ellipsoid centerpoint
 
             for i = 1:NumberOfLinks(1,2)+1
-                [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes{i}(1),self.ur5_link_sizes{i}(2),self.ur5_link_sizes{i}(3));
+                [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
                 EllipsoidPoints = [X(:),Y(:),Z(:)];
 
                 transforms{i} = self.manual_fkine_rob1(current_robq,i);
                 EllipsoidCenterPoints{i} = transforms{i}(1:3,4);
-                disp(i);
+                % disp(i);
                 if i == 1
                     midpoints{i} = transforms{i}*trotx(-pi/2);
-                    disp("The current link transform (pre midpoint adjustement) is");
-                    disp(transforms{i});
-                    midpoints{i}(1:3,4) = transforms{i}(1:3,4)/2;
-                    disp("The current link transform (post midpoint adjustement) is");
-                    disp(transforms{i});
+                    % disp("The current link transform (pre midpoint adjustement) is");
+                    % disp(midpoints{i});
+                    base = self.rob1.model.base;
+                    base = base.T;
+                    midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + base(1:3,4))/2;
+                    % disp("The current link transform (post midpoint adjustement) is");
+                    % disp(midpoints{i});
 
                 elseif i == 4
                     midpoints{i} = transforms{i}*trotx(-pi/2);
-                    disp("The current link transform is");
-                    disp(transforms{i});
-                    disp("The previous link transform is");
-                    disp(transforms{i-1});
+                    % disp("The current link transform is");
+                    % disp(transforms{i});
+                    % disp("The previous link transform is");
+                    % disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
+                    % disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
 
                 elseif i == 5
                     midpoints{i} = transforms{i}*trotx(pi/2);
-                    disp("The current link transform is");
-                    disp(transforms{i});
-                    disp("The previous link transform is");
-                    disp(transforms{i-1});
+                    % disp("The current link transform is");
+                    % disp(transforms{i});
+                    % disp("The previous link transform is");
+                    % disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
+                    % disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
                 else
                     midpoints{i} = transforms{i};
-                    disp("The current link transform is");
-                    disp(transforms{i});
-                    disp("The previous link transform is");
-                    disp(transforms{i-1});
+                    % disp("The current link transform is");
+                    % disp(transforms{i});
+                    % disp("The previous link transform is");
+                    % disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
+                    % disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
                 end
 
                 hold on
                 EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
                 updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
-                plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+                % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
             end
             
             
 
-            % verts = [get(self.Truck,'Vertices'), ones(size(get(self.Truck,'Vertices'),1), 1)];
+            % verts = [get(self.cube,'Vertices'), ones(size(get(self.cube,'Vertices'),1), 1)];
             % verts(:,4) = [];
+            % % disp(verts);
+            verts = [get(self.Truck,'Vertices'), ones(size(get(self.Truck,'Vertices'),1), 1)];
+            verts(:,4) = [];
+            % plot3(verts(:,1),verts(:,2),verts(:,3));
+            % plot3(0.3157, 0.3872, 1.0487);
             % disp(verts);
-            % 
-            % % cubeAtOigin_h = plot3(verts(:,1),verts(:,2),verts(:,3),'r.');
-            % 
-            % for i = 1:NumberOfLinks(1,2)+1
-            %     d = ((verts(:,1)-midpoints{i}(1,4))/self.ur3_link_sizes{i}(1)).^2 ...
-            %       + ((verts(:,2)-midpoints{i}(2,4))/self.ur3_link_sizes{i}(2)).^2 ...
-            %       + ((verts(:,3)-midpoints{i}(3,4))/self.ur3_link_sizes{i}(3)).^2;
-            % 
-            %     disp(d);
-            %     for j = 1:size(d)
-            %         disp(j)
-            %         if d(j) < 1
-            %             disp("intersection detected");
-            %         end
-            %     end
-            % 
-            % end
+
+            % cubeAtOigin_h = plot3(verts(:,1),verts(:,2),verts(:,3),'r.');
+            tic
+            for i = 1:NumberOfLinks(1,2)+1
+                % d = ((verts(:,1)-midpoints{i}(1,4))/self.ur5_link_sizes_for_collisions{i}(1)).^2 ...
+                %   + ((verts(:,2)-midpoints{i}(2,4))/self.ur5_link_sizes_for_collisions{i}(2)).^2 ...
+                %   + ((verts(:,3)-midpoints{i}(3,4))/self.ur5_link_sizes_for_collisions{i}(3)).^2;
+
+                % local_x = midpoints{i}(1,4) - verts(:,1);
+                % local_y = midpoints{i}(2,4) - verts(:,2);
+                % local_z = midpoints{i}(3,4) - verts(:,3);
+                T = self.manual_fkine_rob1(current_robq,i);
+
+                for k = i:size(verts)
+                    vertex_transform = T;
+                    vertex_transform(1:3,4) = [verts(k,1:3)]';
+                    link_to_vertex = inv(T)*vertex_transform;
+
+                    % disp([verts(k,1),verts(k,2),verts(k,3)]);
+                    % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                    % disp(vertex_transform);
+
+                    if (abs(link_to_vertex(1,4)) <= abs(self.ur5_link_sizes_for_collisions{i}(1))) && ...
+                        (abs(link_to_vertex(2,4)) <= abs(self.ur5_link_sizes_for_collisions{i}(2))) && ...
+                        (abs(link_to_vertex(3,4)) <= abs(self.ur5_link_sizes_for_collisions{i}(3)))
+
+                        % disp([abs(link_to_vertex(1,4)), abs(self.ur5_link_sizes_for_collisions{i}(1))]);
+                        % disp([abs(link_to_vertex(2,4)), abs(self.ur5_link_sizes_for_collisions{i}(2))]);
+                        % disp([abs(link_to_vertex(3,4)), abs(self.ur5_link_sizes_for_collisions{i}(3))]);
+
+                        disp("intersection detected");
+                        collision = 1;
+                        disp(["Intersection link number: ", i]);
+                        % disp(k);
+                        disp("Collision detected at: ");
+                        disp(["x:", verts(k,1), "y: ", verts(k,2), "z: ", verts(k,3)]);
+                        % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                        % disp(vertex_transform);
+                        % disp(T);
+                        % disp(link_to_vertex);
+                        break
+                        % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
+                        % ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
+                    end
+                end
+
+                % % disp(d);
+                % for j = 1:size(d)
+                %     % disp(j)
+                %     if d(j) < 1
+                %         disp("intersection detected");
+                %         collision = 1;
+                %         disp(["Intersection link number: ", i]);
+                %         disp(j);
+                %         disp([verts(j,1),verts(j,2),verts(j,3)]);
+                %         disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %         disp(vertex_transform);
+                %         disp(link_to_vertex())
+                %         % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
+                %         ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
+                %     end
+                % end
+
+            end
+            disp(["Time to finish the for loop: " toc]);
+
             
 
             % So the plan is (Check Lab6Solution question 2 and Lab6_collision_detection):
@@ -339,7 +408,7 @@ classdef Lab_assignment_2 < handle
 
                 % Also need to create an ellipsoid around the robot arm
 
-            collision = false;
+            
         end
 
         %% Singularity Detection function and returns a cell array of the singularity locations
@@ -405,6 +474,7 @@ classdef Lab_assignment_2 < handle
             self.rob1.model.animate(deg2rad([0 -90 0 0 0 0]))
             axis([-2 2 -2 2 0 2.2]);
             hold off
+
         end
     end
 
