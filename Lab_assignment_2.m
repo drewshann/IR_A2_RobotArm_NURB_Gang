@@ -408,20 +408,26 @@ classdef Lab_assignment_2 < handle
 
             % cubeAtOigin_h = plot3(verts(:,1),verts(:,2),verts(:,3),'r.');
             tic
+            
             for i = 1:NumberOfLinks(1,2)+1
                 % d = ((verts(:,1)-midpoints{i}(1,4))/self.ur5_link_sizes_for_collisions{i}(1)).^2 ...
                 %   + ((verts(:,2)-midpoints{i}(2,4))/self.ur5_link_sizes_for_collisions{i}(2)).^2 ...
                 %   + ((verts(:,3)-midpoints{i}(3,4))/self.ur5_link_sizes_for_collisions{i}(3)).^2;
+                
 
                 % local_x = midpoints{i}(1,4) - verts(:,1);
                 % local_y = midpoints{i}(2,4) - verts(:,2);
                 % local_z = midpoints{i}(3,4) - verts(:,3);
-                T = self.manual_fkine_rob1(current_robq,i);
+                % T = self.manual_fkine_rob1(current_robq,i);
+                % invT_ = inv(T);
+
+                invT_ = inv(midpoints{i});
 
                 for k = i:size(verts)
-                    vertex_transform = T;
-                    vertex_transform(1:3,4) = [verts(k,1:3)]';
-                    link_to_vertex = inv(T)*vertex_transform;
+                    vertex_transform = midpoints{i};
+                    vertex_transform(1:3,4) = [verts(k,1:3)]';  % Keep rotation from links but change the position to the vertex of ply file
+                    % vertex_transform = transl(verts(k,1),verts(k,2),verts(k,3));
+                    link_to_vertex = invT_*vertex_transform;
 
                     % disp([verts(k,1),verts(k,2),verts(k,3)]);
                     % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
@@ -441,12 +447,20 @@ classdef Lab_assignment_2 < handle
                         % disp(k);
                         disp("Collision detected at: ");
                         disp(["x:", verts(k,1), "y: ", verts(k,2), "z: ", verts(k,3)]);
+
+                        [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
+                        EllipsoidPoints = [X(:),Y(:),Z(:)];
+                        EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                        updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                        plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+
                         % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
                         % disp(vertex_transform);
                         % disp(T);
                         % disp(link_to_vertex);
-                        break
                         % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
+
+                        break
                         % ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
                     end
                 end
@@ -606,6 +620,8 @@ classdef Lab_assignment_2 < handle
             Tree1 = PlaceObject('NewTree.ply',[-0.5 1.4 0]);
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
+            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0 0.5]);
+            emergencyStopButton = PlaceObject('emergencyStopButton', [1.6 0 0.7]);
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
             self.rob2.model.base = transl([0.62 0.15 0.75]) * trotz(pi/2);
