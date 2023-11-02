@@ -20,6 +20,7 @@ classdef Lab_assignment_2 < handle
 
     properties(Constant)
         trsteps = 50;
+        gsteps = 20;
         gripperoffset = 0.09;
         gripOpen = [0,2*pi/9,pi/9];
         gripClose = [0,5*pi/12,pi/12];
@@ -44,13 +45,13 @@ classdef Lab_assignment_2 < handle
                       transl(1.08, 0, 0.36)*trotx(pi), ...
                       transl(1.08, 0.08, 0.36)*trotx(pi), ...
                       transl(1.16, -0.08, 0.36)*trotx(pi)};
-        PlaceApples = [1, -0.08, 0.36;
-                       1, 0, 0.36;
-                       1, 0.08, 0.36;
-                       1.08, -0.08, 0.36;
-                       1.08, 0, 0.36;
-                       1.08, 0.08, 0.36;
-                       1.16, -0.08, 0.36];
+        PlaceApples = [1, -0.08, 0.41;
+                       1, 0, 0.41;
+                       1, 0.08, 0.41;
+                       1.08, -0.08, 0.41;
+                       1.08, 0, 0.41;
+                       1.08, 0.08, 0.41;
+                       1.16, -0.08, 0.41];
 
         ur3_link_sizes = {[0.05,0.05,0.1519], ...
                         [0.24365,0.05,0.05], ...
@@ -99,13 +100,7 @@ classdef Lab_assignment_2 < handle
 
             else
                 self.rob1 = UR5;
-                % self.rob2 = KUKA;
-
-                self.rob1Grip1 = Gripper(self.rob1.model.fkine(self.rob1.model.getpos()).T);
-                self.rob1Grip2 = Gripper(self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(2*pi/3));
-                self.rob1Grip3 = Gripper(self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(4*pi/3));
-                % self.rob2LGrip = Gripper(self.rob2.model.fkine(self.rob2.model.getpos()).T);
-                % self.rob2RGrip = Gripper(self.rob2.model.fkine(self.rob2.model.getpos()).T * trotz(pi));
+                self.rob2 = KUKAKR;
 
                 self.items_pos = self.test_multiple_pos;
                 self.AppleInitial = {transl(0, 1, 1), ...
@@ -120,6 +115,15 @@ classdef Lab_assignment_2 < handle
             hold on
             % self.cube = PlaceObject("BasicObstacle.ply",[0.5,0,0.2]);
             self.setup_environment();
+
+            self.rob1Grip1 = Gripper(self.rob1.model.fkine(self.rob1.model.getpos()).T);
+            self.rob1Grip2 = Gripper(self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(2*pi/3));
+            self.rob1Grip3 = Gripper(self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(4*pi/3));
+            self.rob2Grip1 = Gripper(self.rob2.model.fkine(self.rob2.model.getpos()).T);
+            self.rob2Grip2 = Gripper(self.rob2.model.fkine(self.rob2.model.getpos()).T * trotz(2*pi/3));
+            self.rob2Grip3 = Gripper(self.rob2.model.fkine(self.rob2.model.getpos()).T * trotz(4*pi/3));
+
+            axis([-2 2 -2 2 0 2.2]);
         end
 
 
@@ -165,46 +169,14 @@ classdef Lab_assignment_2 < handle
                 self.rob1.model.animate(r1Traj(i,:));
                 % self.rob2.model.animate(r2Traj(i,:));
                 % self.update_gripper_pos();
-                collision_check = self.checkCollisions();
-                if collision_check == 1
-                    disp("collision detected!!!")
-                    break
-                end
-
-                self.rob1Grip1.model.base = self.rob1.model.fkine(self.rob1.model.getpos()).T;
-                self.rob1Grip2.model.base = self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(2*pi/3);
-                self.rob1Grip3.model.base = self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(4*pi/3);
-                % self.rob2LGrip.model.base = self.rob2.model.fkine(self.rob2.model.getpos().T);
-                % self.rob2RGrip.model.base = self.rob2.model.fkine(self.rob2.model.getpos().T * trotz(pi));
-                
-                if gripper == 1
-                    self.rob1Grip1.model.animate(self.gripOpen);
-                    self.rob1Grip2.model.animate(self.gripOpen);
-                    self.rob1Grip3.model.animate(self.gripOpen);
-                elseif gripper == 2
-                    self.rob1Grip1.model.animate(self.gripClose);
-                    self.rob1Grip2.model.animate(self.gripClose);
-                    self.rob1Grip3.model.animate(self.gripClose);
-                end
+                self.moveGripper1(gripper);
+                % collision_check = self.checkCollisions();
+                % if collision_check == 1
+                %     disp("collision detected!!!")
+                %     break
+                % end
 
                 drawnow()
-            end
-
-            gsteps = 20;
-            if gripper == 1
-                gripperTraj = jtraj(self.gripOpen,self.gripClose,gsteps);
-            elseif gripper == 2
-                gripperTraj = jtraj(self.gripOpen,self.gripClose,gsteps);
-            end
-
-            for i = 1:gsteps
-                % animate the gripper movement at the end of the robot
-                % movement, but also keep animating the open/closed gripper
-                % during the entire jtraj above
-                self.rob1Grip1.model.animate(gripperTraj(i,:));
-                self.rob1Grip2.model.animate(gripperTraj(i,:));
-                self.rob1Grip3.model.animate(gripperTraj(i,:));
-                drawnow;
             end
             
         end
@@ -331,11 +303,11 @@ classdef Lab_assignment_2 < handle
                     disp(["The current apple is number: ",i]);
                     disp("The current apple being picked has the transform: ");
                     if pick_place == 1
-                        gripper_pos = self.AppleInitial{i} * trotx(-pi/2);
+                        gripper_pos = self.AppleInitial{i} * trotx(-pi/2) * transl(0, 0, -0.05);
                         disp(self.AppleInitial{i});
                         qPos2 = self.transformation2Q_rob1(gripper_pos,self.rob1PickInitialGuess);
                     elseif pick_place == 2
-                        gripper_pos = self.AppleFinal{i};
+                        gripper_pos = self.AppleFinal{i} * transl(0, 0, -0.13);
                         disp(self.AppleFinal{i});
                         qPos2 = self.transformation2Q_rob1(gripper_pos,self.rob1PlaceInitialGuess);
                         % qPos2 = self.rob1.model.ikcon(gripper_pos); %,[-4.2672,-0.0367,1.2988,-2.7664,4.7124,-2.6964]);
@@ -349,7 +321,9 @@ classdef Lab_assignment_2 < handle
                     % Open gripper and transform between current position and
                     % starting brick position
                     % self.open_gripper();
-                    self.transform_interpolation(qPos1,qPos2,qPos1,qPos1,pick_place);
+                    self.transform_interpolation(qPos1,qPos2,qPos1,qPos2,pick_place);
+
+                    self.opencloseGripper1(pick_place);
 
                 end
 
@@ -571,6 +545,69 @@ classdef Lab_assignment_2 < handle
             self.robot.plot(zeros(1,6));
         end
 
+    %% Gripper
+    function moveGripper1(self, openclose)
+        self.rob1Grip1.model.base = self.rob1.model.fkine(self.rob1.model.getpos()).T;
+        self.rob1Grip2.model.base = self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(2*pi/3);
+        self.rob1Grip3.model.base = self.rob1.model.fkine(self.rob1.model.getpos()).T * trotz(4*pi/3);
+
+        if openclose == 1
+            self.rob1Grip1.model.animate(self.gripOpen);
+            self.rob1Grip2.model.animate(self.gripOpen);
+            self.rob1Grip3.model.animate(self.gripOpen);
+        elseif openclose == 2
+            self.rob1Grip1.model.animate(self.gripClose);
+            self.rob1Grip2.model.animate(self.gripClose);
+            self.rob1Grip3.model.animate(self.gripClose);
+        end
+    end
+
+    function moveGripper2(self, openclose)
+        self.rob2Grip1.model.base = self.rob2.model.fkine(self.rob2.model.getpos()).T;
+        self.rob2Grip2.model.base = self.rob2.model.fkine(self.rob2.model.getpos()).T * trotz(2*pi/3);
+        self.rob2Grip3.model.base = self.rob2.model.fkine(self.rob2.model.getpos()).T * trotz(4*pi/3);
+
+        if openclose == 1
+            self.rob2Grip1.model.animate(self.gripOpen);
+            self.rob2Grip2.model.animate(self.gripOpen);
+            self.rob2Grip3.model.animate(self.gripOpen);
+        elseif openclose == 2
+            self.rob2Grip1.model.animate(self.gripClose);
+            self.rob2Grip2.model.animate(self.gripClose);
+            self.rob2Grip3.model.animate(self.gripClose);
+        end
+    end
+
+    function opencloseGripper1(self, openclose)
+        if openclose == 1
+            gripperTraj = jtraj(self.gripOpen,self.gripClose,self.gsteps);
+        elseif openclose == 2
+            gripperTraj = jtraj(self.gripClose,self.gripOpen,self.gsteps);
+        end
+
+        for j = 1:self.gsteps
+            self.rob1Grip1.model.animate(gripperTraj(j,:));
+            self.rob1Grip2.model.animate(gripperTraj(j,:));
+            self.rob1Grip3.model.animate(gripperTraj(j,:));
+            drawnow;
+        end
+    end
+
+    function opencloseGripper2(self, openclose)
+        if openclose == 1
+            gripperTraj = jtraj(self.gripOpen,self.gripClose,self.gsteps);
+        elseif openclose == 2
+            gripperTraj = jtraj(self.gripClose,self.gripOpen,self.gsteps);
+        end
+
+        for j = 1:self.gsteps
+            self.rob2Grip1.model.animate(gripperTraj(j,:));
+            self.rob2Grip2.model.animate(gripperTraj(j,:));
+            self.rob2Grip3.model.animate(gripperTraj(j,:));
+            drawnow;
+        end
+    end
+
     %% Environment Setup
         function setup_environment(self)
             hold on
@@ -585,9 +622,13 @@ classdef Lab_assignment_2 < handle
             Tree1 = PlaceObject('NewTree.ply',[-0.5 1.4 0]);
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
+            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0 0.5]);
+            emergencyStopButton = PlaceObject('emergencyStopButton', [1.6 0 0.7]);
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
+            self.rob2.model.base = transl([0.62 0.15 0.75]) * trotz(pi/2);
             self.rob1.model.animate(deg2rad([-90 0 0 0 0 0]));
+            self.rob2.model.animate(deg2rad([0 0 0 0 0 0]));
             axis([-2 2 -2 2 0 2.2]);
 
             hold off
