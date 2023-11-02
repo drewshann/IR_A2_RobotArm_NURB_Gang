@@ -623,7 +623,7 @@ classdef Lab_assignment_2 < handle
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
             FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0 0.5]);
-            emergencyStopButton = PlaceObject('emergencyStopButton', [1.6 0 0.7]);
+            emergencyStopButton = PlaceObject('emergencyStopButton.ply', [1.6 0 0.7]);
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
             self.rob2.model.base = transl([0.62 0.15 0.75]) * trotz(pi/2);
