@@ -209,18 +209,37 @@ end
 
             % robot.model.getpos
             % UR3 = UR3_control.robot;
-            
+
             r1Traj = jtraj(start_q_rob1,end_q_rob1,self.trsteps);
             r2Traj = jtraj(start_q_rob2,end_q_rob2,self.trsteps);
+            % r1Trajwaypoint1 = jtraj(start_q_rob1,[-2.4822, -0.9308, 1.3575, -1.2798, -0.7756, 0],self.trsteps);
+            % r1Trajwaypoint2 = jtraj([-2.4822, -0.9308, 1.3575, -1.2798, -0.7756, 0],end_q_rob1,self.trsteps);
+            % r2Trajwaypoint1 = jtraj(start_q_rob2,[-1.1636, 0.8533, 0.6206, 0, 0, 0],self.trsteps);
+            % r2Trajwaypoint2 = jtraj([-1.1636, 0.8533, 0.6206, 0, 0, 0],end_q_rob2,self.trsteps);
 
+            % for j = 1:2
             for i = 1:self.trsteps
                 if ~self.EmergencyFlag
+
+                    % if i <= (self.trsteps/2)
+                    %     self.rob1.model.animate(r1Trajwaypoint1(i,:));
+                    %     self.rob2.model.animate(r2Trajwaypoint2(i,:));
+                    %     self.moveGripper1(gripper);
+                    %     self.moveGripper2(gripper);
+                    % elseif i > (self.trsteps/2)
+                    %     self.rob1.model.animate(r1Trajwaypoint1(i,:));
+                    %     self.rob2.model.animate(r2Trajwaypoint2(i,:));
+                    %     self.moveGripper1(gripper);
+                    %     self.moveGripper2(gripper);
+                    % end
+
                     % r2.model.fkine(UR3.model.getpos)
                     self.rob1.model.animate(r1Traj(i,:));
                     self.rob2.model.animate(r2Traj(i,:));
                     % self.update_gripper_pos();
                     self.moveGripper1(gripper);
                     self.moveGripper2(gripper);
+
                     % collision_check = self.checkCollisions();
                     % if collision_check == 1
                     %     disp("collision detected!!!")
@@ -232,6 +251,7 @@ end
 
                 drawnow()
             end
+            % end
             
         end
 
@@ -851,7 +871,7 @@ end
             Tree1 = PlaceObject('NewTree.ply',[-0.5 1.4 0]);
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
-            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0.22 0.4]);
+            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.9 0.22 0.4]);
             emergencyStopButton = PlaceObject('emergencyStopButton.ply', [1.6 -0.3 0.4]);
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
