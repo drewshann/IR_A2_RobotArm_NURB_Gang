@@ -61,13 +61,7 @@ classdef Lab_assignment_2 < handle
                        1.08, 0.08, 0.41;
                        1.16, -0.08, 0.41];
 
-        ur3_link_sizes = {[0.05,0.05,0.1519], ...
-                        [0.24365,0.05,0.05], ...
-                        [0.21325,0.05,0.05], ...
-                        [0.05,0.05,0.11235], ...
-                        [0.05,0.05,0.08535], ...
-                        [0.05,0.05,0.0819], ...
-                        [0.05,0.05,0.05]};
+
 
         ur5_link_sizes_for_collisions = {[0.05,0.05,0.089159/2.5], ...
                                         [-0.425/2,0.05,0.05], ...
@@ -85,16 +79,15 @@ classdef Lab_assignment_2 < handle
                         [0.05,0.05,0.0823], ...
                         [0.05,0.05,0.05]};   
 
+        kuka_link_size_for_collision = {[0.1,0.1,0.4/2], ...
+                                        [0.56/2,0.07,0.07], ...
+                                        [-0.035/2,0.05,0.05], ...
+                                        [0.05,0.05,0.515/2], ...
+                                        [0.05,0.05,0.05], ...
+                                        [0.05,0.05,0.087/2], ...
+                                        [0.05,0.05,0.05]};
+
         
-        % % Cell array for the links of the UR3 with q as all zeros
-        % UR3_links = {eye(4), ...                                                        % Base transform
-        %             trotz(0) * transl(0,0,0.1519) * transl(0,0,0) * trotx(pi/2), ...    % joint0To1
-        %             trotz(0) * transl(0,0,0) * transl(-0.24365,0,0) * trotx(0), ...  % joint1To2
-        %             trotz(0) * transl(0,0,0) * transl(-0.21325,0,0) * trotx(0), ...  % joint2To3
-        %             trotz(0) * transl(0,0,0.11235) * transl(0,0,0) * trotx(pi/2), ...% joint3To4
-        %             trotz(0) * transl(0,0,0.08535) * transl(0,0,0) * trotx(-pi/2), ...% joint4To5
-        %             trotz(0) * transl(0,0,0.0819) * transl(0,0,0) * trotx(0), ...    % joint5To6
-        %             eye(4)};                                                            % Tool Transform
     end
 
     methods
@@ -219,18 +212,37 @@ end
 
             % robot.model.getpos
             % UR3 = UR3_control.robot;
-            
+
             r1Traj = jtraj(start_q_rob1,end_q_rob1,self.trsteps);
             r2Traj = jtraj(start_q_rob2,end_q_rob2,self.trsteps);
+            % r1Trajwaypoint1 = jtraj(start_q_rob1,[-2.4822, -0.9308, 1.3575, -1.2798, -0.7756, 0],self.trsteps);
+            % r1Trajwaypoint2 = jtraj([-2.4822, -0.9308, 1.3575, -1.2798, -0.7756, 0],end_q_rob1,self.trsteps);
+            % r2Trajwaypoint1 = jtraj(start_q_rob2,[-1.1636, 0.8533, 0.6206, 0, 0, 0],self.trsteps);
+            % r2Trajwaypoint2 = jtraj([-1.1636, 0.8533, 0.6206, 0, 0, 0],end_q_rob2,self.trsteps);
 
+            % for j = 1:2
             for i = 1:self.trsteps
                 if ~self.EmergencyFlag
+
+                    % if i <= (self.trsteps/2)
+                    %     self.rob1.model.animate(r1Trajwaypoint1(i,:));
+                    %     self.rob2.model.animate(r2Trajwaypoint2(i,:));
+                    %     self.moveGripper1(gripper);
+                    %     self.moveGripper2(gripper);
+                    % elseif i > (self.trsteps/2)
+                    %     self.rob1.model.animate(r1Trajwaypoint1(i,:));
+                    %     self.rob2.model.animate(r2Trajwaypoint2(i,:));
+                    %     self.moveGripper1(gripper);
+                    %     self.moveGripper2(gripper);
+                    % end
+
                     % r2.model.fkine(UR3.model.getpos)
                     self.rob1.model.animate(r1Traj(i,:));
                     self.rob2.model.animate(r2Traj(i,:));
                     % self.update_gripper_pos();
                     self.moveGripper1(gripper);
                     self.moveGripper2(gripper);
+
                     % collision_check = self.checkCollisions();
                     % if collision_check == 1
                     %     disp("collision detected!!!")
@@ -244,6 +256,7 @@ end
 
                 drawnow()
             end
+            % end
             
         end
 
@@ -467,7 +480,7 @@ end
 
         %% Function used to check for collisions and return a true/false if the robot will collide with anything, including the other robot
         function collision = checkCollisions(self)
-            
+            % Rob1
             collision = 0;
             EllipsoidCenterPoints = cell(1,7);
             transforms = cell(1,7);
@@ -475,6 +488,14 @@ end
             NumberOfLinks = size(self.rob1.model.links);
             % disp(["Number of links on the robot: ", NumberOfLinks]);
             current_robq = self.rob1.model.getpos;
+
+            % Rob2
+            EllipsoidCenterPoints_rob2 = cell(1,7);
+            transforms_rob2 = cell(1,7);
+            midpoints_rob2 = cell(1,7);
+            NumberOfLinks_rob2 = size(self.rob1.model.links);
+            % disp(["Number of links on the robot: ", NumberOfLinks]);
+            current_robq_rob2 = self.rob1.model.getpos;
 
             % Initial ellipsoid centerpoint
 
@@ -489,19 +510,24 @@ end
                 if i == 1
                     % The link is translated and then rotated so we need to
                     % determine the transform without the rotation
-                    midpoints{i} = transforms{i}*trotx(-pi/2);
+                    midpoints{i} = transforms{i}*trotx(pi/2);
                     base = self.rob1.model.base;
                     base = base.T; 
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + base(1:3,4))/2;
  
+                % Link 3 midpoint
+                elseif i == 3
+                    midpoints{i} = transforms{i}*trotx(-pi/2);
+                    midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
+
                 % Link 4 midpoint
                 elseif i == 4
-                    midpoints{i} = transforms{i}*trotx(-pi/2);
+                    midpoints{i} = transforms{i}*trotx(pi/2);
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
 
                 % Link 5 midpoint
                 elseif i == 5
-                    midpoints{i} = transforms{i}*trotx(pi/2);
+                    midpoints{i} = transforms{i}*trotx(-pi/2);
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
                 
                 % All other link midpoints
@@ -521,10 +547,97 @@ end
                     self.EmergencyFlag = false;
                 end 
             end
+
+
+            for i = 1:NumberOfLinks_rob2(1,2)+1
+                [X,Y,Z] = ellipsoid(0,0,0,self.kuka_link_size_for_collision{i}(1),self.kuka_link_size_for_collision{i}(2),self.kuka_link_size_for_collision{i}(3));
+                EllipsoidPoints = [X(:),Y(:),Z(:)];
+
+                transforms_rob2{i} = self.manual_fkine_rob2(current_robq_rob2,i);
+                EllipsoidCenterPoints_rob2{i} = transforms_rob2{i}(1:3,4);
+                % Link 1 midpoint
+                if i == 1
+                    % The link is translated and then rotated so we need to
+                    % determine the transform without the rotation
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(-pi/2);
+                    base = self.rob2.model.base;
+                    base = base.T; 
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + base(1:3,4))/2;
+ 
+                % Link 4 midpoint
+                elseif i == 4
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(-pi/2);
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+
+                % Link 5 midpoint
+                elseif i == 5
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(pi/2);
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+                
+                % All other link midpoints
+                else
+                    midpoints_rob2{i} = transforms_rob2{i};
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+                end
+
+                hold on
+                EllipsoidPointsAndOnes = [midpoints_rob2{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                self.rob2_link_points{i} = updatedEllipsoidPoints;
+                % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+            end
+
+
+            for i = 1:NumberOfLinks_rob2(1,2)+1
+                [X,Y,Z] = ellipsoid(0,0,0,self.kuka_link_size_for_collision{i}(1),self.kuka_link_size_for_collision{i}(2),self.kuka_link_size_for_collision{i}(3));
+                EllipsoidPoints = [X(:),Y(:),Z(:)];
+
+                transforms_rob2{i} = self.manual_fkine_rob2(current_robq_rob2,i);
+                EllipsoidCenterPoints_rob2{i} = transforms_rob2{i}(1:3,4);
+                % Link 1 midpoint
+                if i == 1
+                    % The link is translated and then rotated so we need to
+                    % determine the transform without the rotation
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(-pi/2);
+                    base = self.rob2.model.base;
+                    base = base.T; 
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + base(1:3,4))/2;
+ 
+                % Link 4 midpoint
+                elseif i == 4
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(-pi/2);
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+
+                % Link 5 midpoint
+                elseif i == 5
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(pi/2);
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+                
+                % All other link midpoints
+                else
+                    midpoints_rob2{i} = transforms_rob2{i};
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+                end
+
+                hold on
+                EllipsoidPointsAndOnes = [midpoints_rob2{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                self.rob2_link_points{i} = updatedEllipsoidPoints;
+                % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+            end
             
             
             verts = [get(self.Truck,'Vertices'), ones(size(get(self.Truck,'Vertices'),1), 1)];
             verts(:,4) = [];
+            % keyboard
+            % rob1_check = verts;
+            % rob2_check = verts;
+            % 
+            % 
+            % for i = 1:NumberOfLinks(1,2)+1
+            %     rob1_check = [rob1_check; self.rob1_link_points{i}(:,1:3)];
+            %     rob2_check = [rob2_check; self.rob2_link_points{i}(:,1:3)];
+            % end
 
             % plot3(verts(:,1),verts(:,2),verts(:,3));
             % plot3(0.3157, 0.3872, 1.0487);
@@ -532,7 +645,6 @@ end
 
             tic
 
-            
             
             for i = 1:NumberOfLinks(1,2)+1
                 % Old detection method
@@ -594,14 +706,14 @@ end
                         collision = 1;
                         disp(["Intersection link number: ", i]);
                         % disp(k);
-                        disp("Collision detected at: ");
+                        disp("Collision for robot 1 detected at: ");
                         disp(["x:", verts(k,1), "y: ", verts(k,2), "z: ", verts(k,3)]);
 
-                        [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
-                        EllipsoidPoints = [X(:),Y(:),Z(:)];
-                        EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
-                        updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
-                        plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+                        % [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
+                        % EllipsoidPoints = [X(:),Y(:),Z(:)];
+                        % EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                        % updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                        plot3(self.rob1_link_points{i}(:,1), self.rob1_link_points{i}(:,2), self.rob1_link_points{i}(:,3));
 
                         % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
                         % disp(vertex_transform);
@@ -618,6 +730,92 @@ end
                         self.EmergencyFlag = false;
                     end
                 end
+
+
+                % for k = 1:size(rob2_check)
+                %     vertex_transform = midpoints{i};
+                %     vertex_transform(1:3,4) = [rob2_check(k,1:3)]';  % Keep rotation from links but change the position to the vertex of ply file
+                %     % vertex_transform = transl(verts(k,1),verts(k,2),verts(k,3));
+                %     link_to_vertex = invT_*vertex_transform;
+                % 
+                %     % disp([verts(k,1),verts(k,2),verts(k,3)]);
+                %     % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %     % disp(vertex_transform);
+                % 
+                %     if (abs(link_to_vertex(1,4)) <= abs(self.kuka_link_size_for_collision{i}(1))) && ...
+                %         (abs(link_to_vertex(2,4)) <= abs(self.kuka_link_size_for_collision{i}(2))) && ...
+                %         (abs(link_to_vertex(3,4)) <= abs(self.kuka_link_size_for_collision{i}(3)))
+                % 
+                %         % disp([abs(link_to_vertex(1,4)), abs(self.ur5_link_sizes_for_collisions{i}(1))]);
+                %         % disp([abs(link_to_vertex(2,4)), abs(self.ur5_link_sizes_for_collisions{i}(2))]);
+                %         % disp([abs(link_to_vertex(3,4)), abs(self.ur5_link_sizes_for_collisions{i}(3))]);
+                % 
+                %         disp("intersection detected");
+                %         collision = 1;
+                %         disp(["Intersection link number: ", i]);
+                %         % disp(k);
+                %         disp("Collision for robot 2 detected at: ");
+                %         disp(["x:", rob2_check(k,1), "y: ", rob2_check(k,2), "z: ", rob2_check(k,3)]);
+                % 
+                %         % [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
+                %         % EllipsoidPoints = [X(:),Y(:),Z(:)];
+                %         % EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                %         % updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                %         plot3(self.rob2_link_points{i}(:,1), self.rob1_link_points{i}(:,2), self.rob1_link_points{i}(:,3));
+                % 
+                %         % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %         % disp(vertex_transform);
+                %         % disp(T);
+                %         % disp(link_to_vertex);
+                %         % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
+                % 
+                %         break
+                %         % ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
+                %     end
+                % end
+
+
+                % for k = 1:size(rob2_check)
+                %     vertex_transform = midpoints{i};
+                %     vertex_transform(1:3,4) = [rob2_check(k,1:3)]';  % Keep rotation from links but change the position to the vertex of ply file
+                %     % vertex_transform = transl(verts(k,1),verts(k,2),verts(k,3));
+                %     link_to_vertex = invT_*vertex_transform;
+                % 
+                %     % disp([verts(k,1),verts(k,2),verts(k,3)]);
+                %     % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %     % disp(vertex_transform);
+                % 
+                %     if (abs(link_to_vertex(1,4)) <= abs(self.kuka_link_size_for_collision{i}(1))) && ...
+                %         (abs(link_to_vertex(2,4)) <= abs(self.kuka_link_size_for_collision{i}(2))) && ...
+                %         (abs(link_to_vertex(3,4)) <= abs(self.kuka_link_size_for_collision{i}(3)))
+                % 
+                %         % disp([abs(link_to_vertex(1,4)), abs(self.ur5_link_sizes_for_collisions{i}(1))]);
+                %         % disp([abs(link_to_vertex(2,4)), abs(self.ur5_link_sizes_for_collisions{i}(2))]);
+                %         % disp([abs(link_to_vertex(3,4)), abs(self.ur5_link_sizes_for_collisions{i}(3))]);
+                % 
+                %         disp("intersection detected");
+                %         collision = 1;
+                %         disp(["Intersection link number: ", i]);
+                %         % disp(k);
+                %         disp("Collision for robot 2 detected at: ");
+                %         disp(["x:", rob2_check(k,1), "y: ", rob2_check(k,2), "z: ", rob2_check(k,3)]);
+                % 
+                %         % [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
+                %         % EllipsoidPoints = [X(:),Y(:),Z(:)];
+                %         % EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                %         % updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                %         plot3(self.rob2_link_points{i}(:,1), self.rob1_link_points{i}(:,2), self.rob1_link_points{i}(:,3));
+                % 
+                %         % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %         % disp(vertex_transform);
+                %         % disp(T);
+                %         % disp(link_to_vertex);
+                %         % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
+                % 
+                %         break
+                %         % ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
+                %     end
+                % end
 
 
             end
@@ -646,7 +844,7 @@ end
             
         end
 
-
+        %% Manual fkine for robot 1
         function Transform = manual_fkine_rob1(self,q,return_link)
 
             if return_link > 7  % 6 degrees of freedom and a tool transform
@@ -679,7 +877,34 @@ end
         end
 
 
-        function plot_robot_no_ply(self)
+        %% Manual fkine for robot 2
+        function Transform = manual_fkine_rob2(self,q,return_link)
+
+            if return_link > 7  % 6 degrees of freedom and a tool transform
+                disp("The transform for the link number cannot be returned as it exceeds the UR5 robot's links");
+                return
+            end
+            linksArray = {self.rob2.model.base, ...
+                        trotz(q(1)) * transl(0,0,0.4) * trotx(-pi/2), ...
+                        trotz(q(2)-pi/2) * transl(0.56,0,0) * trotx(0), ...
+                        trotz(q(3)+pi/2) * transl(-0.035,0,0) * trotx(pi/2), ...
+                        trotz(q(4)) * transl(0,0,0.515) * trotx(-pi/2), ...
+                        trotz(q(5)) * transl(0,0,0) * trotx(pi/2), ...
+                        trotz(q(6)) * transl(0,0,0.087) * trotx(0), ...
+                        eye(4)};
+            % linksArray = {base_tr, joint1To2, joint2To3, joint3To4, joint4To5, joint5To6, joint6To7, tool_tr};
+            
+
+            Transform = linksArray{1}.T;
+            for i = 2:return_link+1
+                Transform = Transform * linksArray{i};
+            end
+
+            % End effector Transform = base_tr*joint0To1*joint1To2*joint2To3*joint3To4*joint4To5*joint5To6*joint6To7*tool_tr; 
+        end
+
+
+        function plot_robot1_no_ply(self)
             L1 = Link('d',0.089159,'a',0,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-360),deg2rad(360)]);
             L2 = Link('d',0,'a',-0.425,'alpha',0,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
             L3 = Link('d',0,'a',-0.39225,'alpha',0,'offset',0,'qlim',[deg2rad(-170),deg2rad(170)]);
@@ -708,6 +933,7 @@ end
             self.rob1Grip3.model.animate(self.gripClose);
         end
     end
+
 
     function moveGripper2(self, openclose)
         self.rob2Grip1.model.base = self.rob2.model.fkine(self.rob2.model.getpos()).T;
@@ -766,6 +992,7 @@ end
             end
         end
     end
+
 
 
     function rob1_RMRC_Jogging(self,linear,angular)

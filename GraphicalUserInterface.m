@@ -283,16 +283,18 @@ classdef GraphicalUserInterface
 
         function estopButtonCallback(obj,~,~)
             % Emergency stop implementation
-            obj.assignment.EmergencyFlag = True;
+            obj.assignment.EmergencyFlag = true;
         end
 
         function resumeButtonCallback(obj,~,~)
             % Begin from where we stoped or paused implementation
-            obj.assignment.EmergencyFlag = False;
+            obj.assignment.EmergencyFlag = false;
         end
 
         function resetButtonCallback(obj,~,~)
             % Reset to beginning of fruit picking implementation
+            obj.assignment.rob1.model.animate(deg2rad([-90 -90 0 0 0 0]));
+            obj.assignment.rob2.model.animate([0 0 0 0 0 0]);
         end
 
         function P1slidersCallback(obj,~,~)
