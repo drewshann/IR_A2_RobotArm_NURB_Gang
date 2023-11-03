@@ -18,6 +18,7 @@ classdef Lab_assignment_2 < handle
         Apples;
         robot;
         Truck;
+        rmrc_step;
     end
 
     properties(Constant)
@@ -105,7 +106,8 @@ classdef Lab_assignment_2 < handle
             else
                 self.rob1 = UR5;
                 self.rob2 = KUKAKR;
-
+                
+                self.rmrc_step = 0;
                 self.items_pos = self.test_multiple_pos;
                 self.AppleInitial = {transl(0, 1, 1), ...
                                      transl(0.3, 1.3, 0.7), ...
@@ -209,7 +211,7 @@ classdef Lab_assignment_2 < handle
         end
 
         %% Robotic control via Resolved Motion Rate Control
-        function rmrc(self, start_q_rob1, end_q_rob1, start_q_rob2, end_q_rob2)
+        function rmrc(self, end_eff_start_rob1, end_eff_end_rob1, end_eff_start_rob2, end_eff_end_rob2)
             t = 10;             % Total time (s)
             deltaT = 0.05;      % Control frequency
             steps = t/deltaT;   % No. of steps for simulation
@@ -227,19 +229,23 @@ classdef Lab_assignment_2 < handle
             angleError = zeros(3,steps);    % For plotting trajectory error
 
             % 1.3) Set up trajectory, initial pose
+            RPY_start = tr2rpy(end_eff_start_rob1);
+            RPY_end = tr2rpy(end_eff_end_rob1);
             s = lspb(0,1,steps);                % Trapezoidal trajectory scalar
             for i=1:steps
-                x(1,i) = (1-s(i))*0.35 + s(i)*0.35; % Points in x
-                x(2,i) = (1-s(i))*0 + s(i)*0.2; % Points in y
-                x(3,i) = 0.25;% + 0.2*sin(i*delta); % Points in z
-                theta(1,i) = 0;                 % Roll angle 
-                theta(2,i) = 5*pi/9;            % Pitch angle
-                theta(3,i) = 0;                 % Yaw angle
+                x(1,i) = (1-s(i))*0.35+s(i)*0.35;%(1-s(i))*end_eff_start_rob1(1,4) + s(i)*end_eff_end_rob1(1,4);%(1-s(i))*0.35 + s(i)*0.35; % Points in x
+                x(2,i) = (1-s(i))*-0.5+s(i)*0.5;%(1-s(i))*end_eff_start_rob1(2,4) + s(i)*end_eff_end_rob1(2,4); % Points in y
+                x(3,i) = 0.2;%(1-s(i))*end_eff_start_rob1(3,4) + s(i)*end_eff_end_rob1(3,4);%0.25;% + 0.2*sin(i*delta); % Points in z
+                theta(1,i) = 0;%RPY_start(1,1);                 % Roll angle 
+                theta(2,i) = 5*pi/9;%RPY_start(1,2);%5*pi/9;            % Pitch angle
+                theta(3,i) = 0;%RPY_start(1,3);%0;                 % Yaw angle
+                
             end
-            
+            % rotation = end_eff_start_rob1(1:3,1:3);
+
             % Transform becomes imaginary here
-            T1 = transl(x(1,1),x(1,2),x(1,3))*troty(theta(2,1));
-            T = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
+            % T1 = transl(x(1,1),x(1,2),x(1,3))*troty(theta(2,1));%trotx(theta(1,1))*troty(theta(2,1))*trotz(theta(3,1));%troty(theta(2,1));
+            T1 = [rpy2r(theta(1,1),theta(2,1),theta(3,1)) x(:,1);zeros(1,3) 1];          % Create transformation of first point and angle
             q0 = zeros(1,6);                                                            % Initial guess for joint angles
             qMatrix(1,:) = self.rob1.model.ikcon(T1,q0);                                            % Solve joint angles to achieve first waypoint
 
@@ -277,6 +283,7 @@ classdef Lab_assignment_2 < handle
                 qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                         	% Update next joint state based on joint velocities
                 positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
                 % angleError(:,i) = deltaTheta;                                           % For plotting
+                % keyboard
             end
             
             % 1.5) Plot the results
@@ -410,42 +417,29 @@ classdef Lab_assignment_2 < handle
 
                 transforms{i} = self.manual_fkine_rob1(current_robq,i);
                 EllipsoidCenterPoints{i} = transforms{i}(1:3,4);
-                % disp(i);
+                % Link 1 midpoint
                 if i == 1
+                    % The link is translated and then rotated so we need to
+                    % determine the transform without the rotation
                     midpoints{i} = transforms{i}*trotx(-pi/2);
-                    % disp("The current link transform (pre midpoint adjustement) is");
-                    % disp(midpoints{i});
                     base = self.rob1.model.base;
-                    base = base.T;
+                    base = base.T; 
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + base(1:3,4))/2;
-                    % disp("The current link transform (post midpoint adjustement) is");
-                    % disp(midpoints{i});
-
+ 
+                % Link 4 midpoint
                 elseif i == 4
                     midpoints{i} = transforms{i}*trotx(-pi/2);
-                    % disp("The current link transform is");
-                    % disp(transforms{i});
-                    % disp("The previous link transform is");
-                    % disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    % disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
 
+                % Link 5 midpoint
                 elseif i == 5
                     midpoints{i} = transforms{i}*trotx(pi/2);
-                    % disp("The current link transform is");
-                    % disp(transforms{i});
-                    % disp("The previous link transform is");
-                    % disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    % disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
+                
+                % All other link midpoints
                 else
                     midpoints{i} = transforms{i};
-                    % disp("The current link transform is");
-                    % disp(transforms{i});
-                    % disp("The previous link transform is");
-                    % disp(transforms{i-1});
                     midpoints{i}(1:3,4) = (transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2;
-                    % disp((transforms{i}(1:3,4) + transforms{i-1}(1:3,4))/2);
                 end
 
                 hold on
@@ -455,34 +449,55 @@ classdef Lab_assignment_2 < handle
             end
             
             
-
-            % verts = [get(self.cube,'Vertices'), ones(size(get(self.cube,'Vertices'),1), 1)];
-            % verts(:,4) = [];
-            % % disp(verts);
             verts = [get(self.Truck,'Vertices'), ones(size(get(self.Truck,'Vertices'),1), 1)];
             verts(:,4) = [];
+
             % plot3(verts(:,1),verts(:,2),verts(:,3));
             % plot3(0.3157, 0.3872, 1.0487);
             % disp(verts);
 
-            % cubeAtOigin_h = plot3(verts(:,1),verts(:,2),verts(:,3),'r.');
             tic
+
+            
             
             for i = 1:NumberOfLinks(1,2)+1
+                % Old detection method
+                % close_verts = cell(0,0);
+                % 
                 % d = ((verts(:,1)-midpoints{i}(1,4))/self.ur5_link_sizes_for_collisions{i}(1)).^2 ...
                 %   + ((verts(:,2)-midpoints{i}(2,4))/self.ur5_link_sizes_for_collisions{i}(2)).^2 ...
                 %   + ((verts(:,3)-midpoints{i}(3,4))/self.ur5_link_sizes_for_collisions{i}(3)).^2;
+                % 
+                % % disp(d);
+                % for j = 1:size(d)
+                %     disp(d(j));
+                %     if d(j) < 1
+                %         % close_verts{end+1} = verts(j);
+                %         disp("########");
+                % 
+                %     end
+                %     keyboard
+                % end
+
+                % close_verts = [];
+                % d = ((verts(:,1)-midpoints{i}(1,4)).^2 + (verts(:,2)-midpoints{i}(2,4)).^2 + (verts(:,3)-midpoints{i}(3,4)).^2);
+                % disp(d);
+                % disp("The max radii in the link is: ")
+                % disp(max(self.ur5_link_sizes_for_collisions{i}));
+
+                % for j = 1:(size(verts))
+                %     if abs(d*2) < max(abs(self.ur5_link_sizes_for_collisions{i}))
+                %         close_verts = [close_verts;verts(j,:)];
+                %     end
+                % end
+                % disp("The close vertices are: ");
+                % disp(close_verts);
                 
 
-                % local_x = midpoints{i}(1,4) - verts(:,1);
-                % local_y = midpoints{i}(2,4) - verts(:,2);
-                % local_z = midpoints{i}(3,4) - verts(:,3);
-                % T = self.manual_fkine_rob1(current_robq,i);
-                % invT_ = inv(T);
 
                 invT_ = inv(midpoints{i});
 
-                for k = i:size(verts)
+                for k = 1:size(verts)
                     vertex_transform = midpoints{i};
                     vertex_transform(1:3,4) = [verts(k,1:3)]';  % Keep rotation from links but change the position to the vertex of ply file
                     % vertex_transform = transl(verts(k,1),verts(k,2),verts(k,3));
@@ -524,22 +539,6 @@ classdef Lab_assignment_2 < handle
                     end
                 end
 
-                % % disp(d);
-                % for j = 1:size(d)
-                %     % disp(j)
-                %     if d(j) < 1
-                %         disp("intersection detected");
-                %         collision = 1;
-                %         disp(["Intersection link number: ", i]);
-                %         disp(j);
-                %         disp([verts(j,1),verts(j,2),verts(j,3)]);
-                %         disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
-                %         disp(vertex_transform);
-                %         disp(link_to_vertex())
-                %         % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
-                %         ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
-                %     end
-                % end
 
             end
             disp(["Time to finish the for loop: " toc]);
@@ -547,17 +546,22 @@ classdef Lab_assignment_2 < handle
             
 
             % So the plan is (Check Lab6Solution question 2 and Lab6_collision_detection):
-                % - Get the vertices of the ply file, if it's a complicated
-                % shape then just use the straight vertices, if not then
-                % create a mesh grid with reasonable number of points. Then
-                % a point cloud of the object.
+                % - Create ellipsoid around links, figure out the midpoint of the each link (radii values
+                % are hardcoded for the robot, in the DH parameters it's
+                % x,y and z
 
-                % - Get the algebraic distance and check whether within 1
+                % - Get the vertices of the ply file
 
-                % - If not then keep moving, if it is then stop. Might need
+                % - Get the relative transform between each link and each
+                % point/vertex in the ply files.
+
+                % - If the x,y and z positions of the vertex relative to
+                % the midpoint of the link are within the x,y and z link
+                % sizes return true, if the relative x,y and z are not
+                % within the link size then return false.
+
+                % - If false then keep moving, if true then stop movement. Might need
                 % to actively avoid certain zones, gotta do stopping first.
-
-                % Also need to create an ellipsoid around the robot arm
 
             
         end
@@ -663,6 +667,59 @@ classdef Lab_assignment_2 < handle
             self.rob2Grip3.model.animate(gripperTraj(j,:));
             drawnow;
         end
+    end
+
+
+    function RMRC_Jogging(self,linear,angular)
+        % Have to input a "weighting" for movement linear and angular.
+        % E.g. if linear [1,1,1] is entered, then the movement will make
+        % increments of 1 in all three axes per function call.
+
+        % 1.1) Set parameters for the simulation
+        self.rob1.model.tool = transl(0,0,0);
+        q = self.rob1.model.getpos;
+        
+        self.rmrc_step=self.rmrc_step+1; % increment step count
+        
+        % get values from the gui
+        linear_motion = linear;
+        angular_motion = angular;
+           
+        % -------------------------------------------------------------
+        % YOUR CODE GOES HERE
+        % 1 - turn joystick input into an end-effector force measurement  
+        fx = linear_motion(1);
+        fy = linear_motion(2);
+        fz = linear_motion(3);
+        
+        tx = angular_motion(1);
+        ty = angular_motion(2);
+        tz = angular_motion(3);
+        
+        f = [fx;fy;fz;tx;ty;tz]; % combined force-torque vector (wrench)
+        
+        % 2 - use simple admittance scheme to convert force measurement into
+        % velocity command
+        Ka = diag(ones(1,6)); % admittance gain matrix  
+        dx = Ka*f; % convert wrench into end-effector velocity command
+        
+        % 2 - use DLS J inverse to calculate joint velocity
+        J = self.rob1.model.jacobe(q);
+        
+        lambda = 0.1;
+        Jinv_dls = inv((J'*J)+lambda^2*eye(6))*J';
+        dq = Jinv_dls*dx;
+        
+        % 3 - apply joint velocity to step robot joint angles
+        q = q + dq';
+        % -------------------------------------------------------------
+        
+        % Update plot
+        self.rob1.model.animate(q); 
+        drawnow();
+
+
+    
     end
 
     %% Environment Setup
