@@ -21,6 +21,7 @@ classdef Lab_assignment_2 < handle
         rmrc_step;
         rob1_link_points;
         rob2_link_points;
+        EmergencyFlag;
     end
 
     properties(Constant)
@@ -106,6 +107,7 @@ classdef Lab_assignment_2 < handle
                 self.rob1_link_points = cell(1,6);
                 self.rob2_link_points = cell(1,6);
                 self.items_pos = self.test_multiple_pos;
+                self.EmergencyFlag = false;
                 self.AppleInitial = {transl(0, 1, 1), ...
                                      transl(0.3, 1.3, 0.7), ...
                                      transl(0.5, 1.2, 1.1), ...
@@ -133,10 +135,13 @@ classdef Lab_assignment_2 < handle
 
         %% Assign which apples will be picked by which robots
         function assignApples(self, threshold)
-            s = size(self.AppleInitial);
-            index1 = 1;
-            index2 = 1;
-            for i = 1:s(2)
+    % Check if the emergency flag is set to false
+    if ~self.EmergencyFlag
+        s = size(self.AppleInitial);
+        index1 = 1;
+        index2 = 1;
+        for i = 1:s(2)
+            if ~self.EmergencyFlag
                 if self.AppleInitial{1,i}(3,4) < threshold
                     self.rob1Apples{1,index1} = self.AppleInitial{1,i};
                     index1 = index1 + 1;
@@ -144,31 +149,43 @@ classdef Lab_assignment_2 < handle
                     self.rob2Apples{1,index2} = self.AppleInitial{1,i};
                     index2 = index2 + 1;
                 end
+            else
+                disp('Estop triggered')
             end
-        end
 
+        end
+    else
+        % If the emergencyFlag is true we deal with that here
+        
+        disp('Emergency flag is set. function was in assignApples.');
+    end
+end
 
         %% Change the Transform/pose relative to robot base into q values
         function q1 = transformation2Q_rob1(self, transform, InitialGuess)
-            % Have a try catch statement to tell whether the ikine function
-            % converges or not (ie end effector position is achievable)
-            if numel(InitialGuess) ~= 6
-                q1 = self.rob1.model.ikcon(transform);
-            else
-                q1 = self.rob1.model.ikcon(transform,InitialGuess); %, self.initialGuessQRob1);
-            end
-
-            % Run fkine after ikcon to test whether we got the correct end
-            % effector position
+    if ~self.EmergencyFlag  % Check if emergency flag is not set
+        if numel(InitialGuess) ~= 6
+            q1 = self.rob1.model.ikcon(transform);
+        else
+            q1 = self.rob1.model.ikcon(transform,InitialGuess);
         end
-
+    else
+        disp('Emergency stop engaged. Program was in transformation2Q_rob1.');
+        %q1 = [];  Do we need to zero q1?
+    end
+end
         function q2 = transformation2Q_rob2(self, transform, InitialGuess)
-            if numel(InitialGuess) ~= 6
-                q2 = self.rob2.model.ikcon(transform);
-            else
-                q2 = self.rob2.model.ikcon(transform,InitialGuess);
-            end
+    if ~self.EmergencyFlag  % Check if emergency flag is not set
+        if numel(InitialGuess) ~= 6
+            q2 = self.rob2.model.ikcon(transform);
+        else
+            q2 = self.rob2.model.ikcon(transform,InitialGuess);
         end
+    else
+        disp('Emergency stop engaged. Pragram was in transformation2Q_rob2.');
+        q2 = [];  % Return an empty array or handle according to your requirements
+    end
+end
 
         %% Change the robot q values into an end effector transform
         function transform1 = q2Transform_rob1(self, q)
@@ -190,16 +207,20 @@ classdef Lab_assignment_2 < handle
             r2Traj = jtraj(start_q_rob2,end_q_rob2,self.trsteps);
 
             for i = 1:self.trsteps
-                % r2.model.fkine(UR3.model.getpos)
-                self.rob1.model.animate(r1Traj(i,:));
-                self.rob2.model.animate(r2Traj(i,:));
-                % self.update_gripper_pos();
-                self.moveGripper1(gripper);
-                self.moveGripper2(gripper);
-                collision_check = self.checkCollisions();
-                if collision_check == 1
-                    disp("collision detected!!!")
-                    break
+                if ~self.EmergencyFlag
+                    % r2.model.fkine(UR3.model.getpos)
+                    self.rob1.model.animate(r1Traj(i,:));
+                    self.rob2.model.animate(r2Traj(i,:));
+                    % self.update_gripper_pos();
+                    self.moveGripper1(gripper);
+                    self.moveGripper2(gripper);
+                    collision_check = self.checkCollisions();
+                    if collision_check == 1
+                        disp("collision detected!!!")
+                        break
+                    end
+                else 
+                    disp('Estop Triggered')
                 end
 
                 drawnow()
@@ -230,12 +251,16 @@ classdef Lab_assignment_2 < handle
             RPY_end = tr2rpy(end_eff_end_rob1);
             s = lspb(0,1,steps);                % Trapezoidal trajectory scalar
             for i=1:steps
+                if~self.EmergencyFlag
                 x(1,i) = (1-s(i))*0.35+s(i)*0.35;%(1-s(i))*end_eff_start_rob1(1,4) + s(i)*end_eff_end_rob1(1,4);%(1-s(i))*0.35 + s(i)*0.35; % Points in x
                 x(2,i) = (1-s(i))*-0.5+s(i)*0.5;%(1-s(i))*end_eff_start_rob1(2,4) + s(i)*end_eff_end_rob1(2,4); % Points in y
                 x(3,i) = 0.2;%(1-s(i))*end_eff_start_rob1(3,4) + s(i)*end_eff_end_rob1(3,4);%0.25;% + 0.2*sin(i*delta); % Points in z
                 theta(1,i) = 0;%RPY_start(1,1);                 % Roll angle 
                 theta(2,i) = 5*pi/9;%RPY_start(1,2);%5*pi/9;            % Pitch angle
                 theta(3,i) = 0;%RPY_start(1,3);%0;                 % Yaw angle
+                else
+                    disp('Estop Triggered')
+                end
                 
             end
             % rotation = end_eff_start_rob1(1:3,1:3);
@@ -249,38 +274,46 @@ classdef Lab_assignment_2 < handle
 
             % 1.4) Track the trajectory with RMRC
             for i = 1:steps-1
-                % UPDATE: fkine function now returns an SE3 object. To obtain the 
-                % Transform Matrix, access the variable in the object 'T' with '.T'.
-                T = self.rob1.model.fkine(qMatrix(i,:)).T;                                           % Get forward transformation at current joint state
-                deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
-                Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
-                Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
-                Rdot = (1/deltaT)*(Rd - Ra);                                                % Calculate rotation matrix error
-                S = Rdot*Ra';                                                            % Skew symmetric!
-                linear_velocity = (1/deltaT)*deltaX;
-                angular_velocity = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
-                % deltaTheta = tr2rpy(Rd*Ra');                                            % Convert rotation matrix to RPY angles
-                xdot = W*[linear_velocity;angular_velocity];                          	% Calculate end-effector velocity to reach next waypoint.
-                J = self.rob1.model.jacob0(qMatrix(i,:));                 % Get Jacobian at current joint state
-                m(i) = sqrt(det(J*J'));
-                if m(i) < epsilon  % If manipulability is less than given threshold
-                    lambda = (1 - m(i)/epsilon)*5E-2;
-                else
-                    lambda = 0;
-                end
-                invJ = inv(J'*J + lambda *eye(6))*J';                                   % DLS Inverse
-                qdot(i,:) = (invJ*xdot)';                                                % Solve the RMRC equation (you may need to transpose the         vector)
-                for j = 1:6                                                             % Loop through joints 1 to 6
-                    if qMatrix(i,j) + deltaT*qdot(i,j) < self.rob1.model.qlim(j,1)                     % If next joint angle is lower than joint limit...
-                        qdot(i,j) = 0; % Stop the motor
-                    elseif qMatrix(i,j) + deltaT*qdot(i,j) > self.rob1.model.qlim(j,2)                 % If next joint angle is greater than joint limit ...
-                        qdot(i,j) = 0; % Stop the motor
+                if~self.EmergencyFlag
+                    % UPDATE: fkine function now returns an SE3 object. To obtain the 
+                    % Transform Matrix, access the variable in the object 'T' with '.T'.
+                    T = self.rob1.model.fkine(qMatrix(i,:)).T;                                           % Get forward transformation at current joint state
+                    deltaX = x(:,i+1) - T(1:3,4);                                         	% Get position error from next waypoint
+                    Rd = rpy2r(theta(1,i+1),theta(2,i+1),theta(3,i+1));                     % Get next RPY angles, convert to rotation matrix
+                    Ra = T(1:3,1:3);                                                        % Current end-effector rotation matrix
+                    Rdot = (1/deltaT)*(Rd - Ra);                                                % Calculate rotation matrix error
+                    S = Rdot*Ra';                                                            % Skew symmetric!
+                    linear_velocity = (1/deltaT)*deltaX;
+                    angular_velocity = [S(3,2);S(1,3);S(2,1)];                              % Check the structure of Skew Symmetric matrix!!
+                    % deltaTheta = tr2rpy(Rd*Ra');                                            % Convert rotation matrix to RPY angles
+                    xdot = W*[linear_velocity;angular_velocity];                          	% Calculate end-effector velocity to reach next waypoint.
+                    J = self.rob1.model.jacob0(qMatrix(i,:));                 % Get Jacobian at current joint state
+                    m(i) = sqrt(det(J*J'));
+                    if m(i) < epsilon  % If manipulability is less than given threshold
+                        lambda = (1 - m(i)/epsilon)*5E-2;
+                    else
+                        lambda = 0;
                     end
+                    invJ = inv(J'*J + lambda *eye(6))*J';                                   % DLS Inverse
+                    qdot(i,:) = (invJ*xdot)';                                                % Solve the RMRC equation (you may need to transpose the         vector)
+                    for j = 1:6                                                             % Loop through joints 1 to 6
+                        if~self.EmergencyFlag
+                        if qMatrix(i,j) + deltaT*qdot(i,j) < self.rob1.model.qlim(j,1)                     % If next joint angle is lower than joint limit...
+                            qdot(i,j) = 0; % Stop the motor
+                        elseif qMatrix(i,j) + deltaT*qdot(i,j) > self.rob1.model.qlim(j,2)                 % If next joint angle is greater than joint limit ...
+                            qdot(i,j) = 0; % Stop the motor
+                        end
+                        else
+                            disp('Estop Triggered')
+                        end
+                    end
+                    qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                         	% Update next joint state based on joint velocities
+                    positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
+                    % angleError(:,i) = deltaTheta;                                           % For plotting
+                    % keyboard
+                else
+                    disp('Estop Triggered')
                 end
-                qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                         	% Update next joint state based on joint velocities
-                positionError(:,i) = x(:,i+1) - T(1:3,4);                               % For plotting
-                % angleError(:,i) = deltaTheta;                                           % For plotting
-                % keyboard
             end
             
             % 1.5) Plot the results
@@ -288,12 +321,16 @@ classdef Lab_assignment_2 < handle
             
             % plot3(x(1,:),x(2,:),x(3,:),'k.','LineWidth',1)
             for i = 1:steps
+                if~self.EmergencyFlag
                 self.rob1.model.animate(qMatrix(i,:));
                 hold on
                 end_eff = self.rob1.model.fkine(qMatrix(i,:));
                 end_eff = end_eff.T;
                 plot3(end_eff(1,4),end_eff(2,4),end_eff(3,4),'r.');
                 drawnow();
+                else
+                    disp('Estop Triggered')
+                end
             end
             
             disp(['Plot took ', num2str(toc), 'seconds'])
@@ -319,6 +356,7 @@ classdef Lab_assignment_2 < handle
 %   transform for item position, false]
 
             for i = 1:num_items
+                if~self.EmergencyFlag
                 self.current_item = i;
                 for pick_place = 1:2 % pick apple = 1, place apple = 2
                     currentFigure = gcf;
@@ -389,6 +427,9 @@ classdef Lab_assignment_2 < handle
                     self.Apples(end+1-i,1) = PlaceObject('NewApple.ply',self.PlaceApples(end+1-i,:));
                 end
                 drawnow;
+                else
+                    disp('Estop Triggered')
+                end
             end
 
             hold off
@@ -417,6 +458,7 @@ classdef Lab_assignment_2 < handle
             % Initial ellipsoid centerpoint
 
             for i = 1:NumberOfLinks(1,2)+1
+                if~self.EmergencyFlag
                 [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
                 EllipsoidPoints = [X(:),Y(:),Z(:)];
 
@@ -456,6 +498,48 @@ classdef Lab_assignment_2 < handle
                 EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
                 updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
                 self.rob1_link_points{i} = updatedEllipsoidPoints;
+                % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
+                else
+                    disp('Estop Triggered')
+                end 
+            end
+
+
+            for i = 1:NumberOfLinks_rob2(1,2)+1
+                [X,Y,Z] = ellipsoid(0,0,0,self.kuka_link_size_for_collision{i}(1),self.kuka_link_size_for_collision{i}(2),self.kuka_link_size_for_collision{i}(3));
+                EllipsoidPoints = [X(:),Y(:),Z(:)];
+
+                transforms_rob2{i} = self.manual_fkine_rob2(current_robq_rob2,i);
+                EllipsoidCenterPoints_rob2{i} = transforms_rob2{i}(1:3,4);
+                % Link 1 midpoint
+                if i == 1
+                    % The link is translated and then rotated so we need to
+                    % determine the transform without the rotation
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(-pi/2);
+                    base = self.rob2.model.base;
+                    base = base.T; 
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + base(1:3,4))/2;
+ 
+                % Link 4 midpoint
+                elseif i == 4
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(-pi/2);
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+
+                % Link 5 midpoint
+                elseif i == 5
+                    midpoints_rob2{i} = transforms_rob2{i}*trotx(pi/2);
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+                
+                % All other link midpoints
+                else
+                    midpoints_rob2{i} = transforms_rob2{i};
+                    midpoints_rob2{i}(1:3,4) = (transforms_rob2{i}(1:3,4) + transforms_rob2{i-1}(1:3,4))/2;
+                end
+
+                hold on
+                EllipsoidPointsAndOnes = [midpoints_rob2{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                self.rob2_link_points{i} = updatedEllipsoidPoints;
                 % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
             end
 
@@ -556,6 +640,7 @@ classdef Lab_assignment_2 < handle
                 invT_ = inv(midpoints{i});
 
                 for k = 1:size(verts)
+                    if~self.EmergencyFlag
                     vertex_transform = midpoints{i};
                     vertex_transform(1:3,4) = [verts(k,1:3)]';  % Keep rotation from links but change the position to the vertex of ply file
                     % vertex_transform = transl(verts(k,1),verts(k,2),verts(k,3));
@@ -595,7 +680,53 @@ classdef Lab_assignment_2 < handle
                         break
                         % ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
                     end
+                    else
+                        disp('Estop Triggered')
+                    end
                 end
+
+
+                % for k = 1:size(rob2_check)
+                %     vertex_transform = midpoints{i};
+                %     vertex_transform(1:3,4) = [rob2_check(k,1:3)]';  % Keep rotation from links but change the position to the vertex of ply file
+                %     % vertex_transform = transl(verts(k,1),verts(k,2),verts(k,3));
+                %     link_to_vertex = invT_*vertex_transform;
+                % 
+                %     % disp([verts(k,1),verts(k,2),verts(k,3)]);
+                %     % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %     % disp(vertex_transform);
+                % 
+                %     if (abs(link_to_vertex(1,4)) <= abs(self.kuka_link_size_for_collision{i}(1))) && ...
+                %         (abs(link_to_vertex(2,4)) <= abs(self.kuka_link_size_for_collision{i}(2))) && ...
+                %         (abs(link_to_vertex(3,4)) <= abs(self.kuka_link_size_for_collision{i}(3)))
+                % 
+                %         % disp([abs(link_to_vertex(1,4)), abs(self.ur5_link_sizes_for_collisions{i}(1))]);
+                %         % disp([abs(link_to_vertex(2,4)), abs(self.ur5_link_sizes_for_collisions{i}(2))]);
+                %         % disp([abs(link_to_vertex(3,4)), abs(self.ur5_link_sizes_for_collisions{i}(3))]);
+                % 
+                %         disp("intersection detected");
+                %         collision = 1;
+                %         disp(["Intersection link number: ", i]);
+                %         % disp(k);
+                %         disp("Collision for robot 2 detected at: ");
+                %         disp(["x:", rob2_check(k,1), "y: ", rob2_check(k,2), "z: ", rob2_check(k,3)]);
+                % 
+                %         % [X,Y,Z] = ellipsoid(0,0,0,self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3));
+                %         % EllipsoidPoints = [X(:),Y(:),Z(:)];
+                %         % EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
+                %         % updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                %         plot3(self.rob2_link_points{i}(:,1), self.rob1_link_points{i}(:,2), self.rob1_link_points{i}(:,3));
+                % 
+                %         % disp([midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4)]);
+                %         % disp(vertex_transform);
+                %         % disp(T);
+                %         % disp(link_to_vertex);
+                %         % disp([self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(2),self.ur5_link_sizes_for_collisions{i}(3)]);
+                % 
+                %         break
+                %         % ellipsoid(midpoints{i}(1,4),midpoints{i}(2,4),midpoints{i}(3,4),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1),self.ur5_link_sizes_for_collisions{i}(1));
+                %     end
+                % end
 
 
                 % for k = 1:size(rob2_check)
@@ -687,7 +818,11 @@ classdef Lab_assignment_2 < handle
 
             Transform = linksArray{1}.T;
             for i = 2:return_link+1
+                if~self.EmergencyFlag
                 Transform = Transform * linksArray{i};
+                else
+                    disp('Estop Triggered')
+                end
             end
 
             % End effector Transform = base_tr*joint0To1*joint1To2*joint2To3*joint3To4*joint4To5*joint5To6*joint6To7*tool_tr; 
@@ -776,10 +911,14 @@ classdef Lab_assignment_2 < handle
         end
 
         for j = 1:self.gsteps
+            if~self.EmergencyFlag
             self.rob1Grip1.model.animate(gripperTraj(j,:));
             self.rob1Grip2.model.animate(gripperTraj(j,:));
             self.rob1Grip3.model.animate(gripperTraj(j,:));
             drawnow;
+            else
+                disp('Estop Triggered')
+            end
         end
     end
 
@@ -791,16 +930,20 @@ classdef Lab_assignment_2 < handle
         end
 
         for j = 1:self.gsteps
+            if~self.EmergencyFlag
             self.rob2Grip1.model.animate(gripperTraj(j,:));
             self.rob2Grip2.model.animate(gripperTraj(j,:));
             self.rob2Grip3.model.animate(gripperTraj(j,:));
             drawnow;
+            else
+                disp('Estop Triggered')
+            end
         end
     end
 
 
 
-    function RMRC_Jogging(self,linear,angular)
+    function rob1_RMRC_Jogging(self,linear,angular)
         % Have to input a "weighting" for movement linear and angular.
         % E.g. if linear [1,1,1] is entered, then the movement will make
         % increments of 1 in all three axes per function call.
@@ -830,7 +973,7 @@ classdef Lab_assignment_2 < handle
         
         % 2 - use simple admittance scheme to convert force measurement into
         % velocity command
-        Ka = diag(ones(1,6)); % admittance gain matrix  
+        Ka = diag([0.5,0.5,0.5,ones(1,3)]); % admittance gain matrix  
         dx = Ka*f; % convert wrench into end-effector velocity command
         
         % 2 - use DLS J inverse to calculate joint velocity
@@ -848,8 +991,57 @@ classdef Lab_assignment_2 < handle
         self.rob1.model.animate(q); 
         drawnow();
 
+    end
 
-    
+
+    function rob2_RMRC_Jogging(self,linear,angular)
+        % Have to input a "weighting" for movement linear and angular.
+        % E.g. if linear [1,1,1] is entered, then the movement will make
+        % increments of 1 in all three axes per function call.
+
+        % 1.1) Set parameters for the simulation
+        self.rob2.model.tool = transl(0,0,0);
+        q = self.rob2.model.getpos;
+        
+        self.rmrc_step=self.rmrc_step+1; % increment step count
+        
+        % get values from the gui
+        linear_motion = linear;
+        angular_motion = angular;
+           
+        % -------------------------------------------------------------
+        % YOUR CODE GOES HERE
+        % 1 - turn joystick input into an end-effector force measurement  
+        fx = linear_motion(1);
+        fy = linear_motion(2);
+        fz = linear_motion(3);
+        
+        tx = angular_motion(1);
+        ty = angular_motion(2);
+        tz = angular_motion(3);
+        
+        f = [fx;fy;fz;tx;ty;tz]; % combined force-torque vector (wrench)
+        
+        % 2 - use simple admittance scheme to convert force measurement into
+        % velocity command
+        Ka = diag([0.5,0.5,0.5,ones(1,3)]); % admittance gain matrix  
+        dx = Ka*f; % convert wrench into end-effector velocity command
+        
+        % 2 - use DLS J inverse to calculate joint velocity
+        J = self.rob2.model.jacobe(q);
+        
+        lambda = 0.1;
+        Jinv_dls = inv((J'*J)+lambda^2*eye(6))*J';
+        dq = Jinv_dls*dx;
+        
+        % 3 - apply joint velocity to step robot joint angles
+        q = q + dq';
+        % -------------------------------------------------------------
+        
+        % Update plot
+        self.rob2.model.animate(q); 
+        drawnow();
+
     end
 
     %% Environment Setup
@@ -866,8 +1058,8 @@ classdef Lab_assignment_2 < handle
             Tree1 = PlaceObject('NewTree.ply',[-0.5 1.4 0]);
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
-            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0 0.5]);
-            emergencyStopButton = PlaceObject('emergencyStopButton.ply', [1.6 0 0.7]);
+            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0.22 0.4]);
+            emergencyStopButton = PlaceObject('emergencyStopButton.ply', [1.6 -0.3 0.4]);
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
             self.rob2.model.base = transl([0.62 0.15 0.75]) * trotz(pi/2);
