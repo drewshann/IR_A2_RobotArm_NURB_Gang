@@ -2,6 +2,8 @@ classdef Lab_assignment_2 < handle
 
     properties
         AppleInitial;
+        rob1Apples;
+        rob2Apples;
         rob1;
         rob2;
         rob1Grip1;
@@ -28,6 +30,8 @@ classdef Lab_assignment_2 < handle
         % initialGuessQRob1 = [-0.7849   -1.7363    0.0001    0.1327   -1.6231    0.7849];
         rob1PickInitialGuess = [-1.5010, -0.4014, 0.4712, 3.0718, -1.5533, 0];
         rob1PlaceInitialGuess = [-4.2672, -0.0367, 1.2988, -2.7664, 4.7124, -2.6964];
+        rob2PickInitialGuess = [-0.1920, 0.7369, 0.5042, 0, 0, 0];
+        rob2PlaceInitialGuess = [-1.9005, 1.6678, 1.4350, 0, 0, 0];
 
         apple_pos1 = [deg2rad(43.2), deg2rad(-43.2), deg2rad(-14.4), deg2rad(28.8), deg2rad(43.2), deg2rad(28.8)];  % From teach
         test_single_pos = transl(0.4,0,0.2) * trotx(-pi);
@@ -124,6 +128,24 @@ classdef Lab_assignment_2 < handle
             self.rob2Grip3 = Gripper(self.rob2.model.fkine(self.rob2.model.getpos()).T * trotz(4*pi/3));
 
             axis([-2 2 -2 2 0 2.2]);
+            self.assignApples(1.2);
+        end
+
+
+        %% Assign which apples will be picked by which robots
+        function assignApples(self, threshold)
+            s = size(self.AppleInitial);
+            index1 = 1;
+            index2 = 1;
+            for i = 1:s(2)
+                if self.AppleInitial{1,i}(3,4) < threshold
+                    self.rob1Apples{1,index1} = self.AppleInitial{1,i};
+                    index1 = index1 + 1;
+                elseif self.AppleInitial{1,i}(3,4) > threshold
+                    self.rob2Apples{1,index2} = self.AppleInitial{1,i};
+                    index2 = index2 + 1;
+                end
+            end
         end
 
 
@@ -141,8 +163,12 @@ classdef Lab_assignment_2 < handle
             % effector position
         end
 
-        function q2 = transformation2Q_rob2(self, transform)
-            q2 = self.rob2.model.ikcon(transform);
+        function q2 = transformation2Q_rob2(self, transform, InitialGuess)
+            if numel(InitialGuess) ~= 6
+                q2 = self.rob2.model.ikcon(transform);
+            else
+                q2 = self.rob2.model.ikcon(transform,InitialGuess);
+            end
         end
 
         %% Change the robot q values into an end effector transform
@@ -162,14 +188,15 @@ classdef Lab_assignment_2 < handle
             % UR3 = UR3_control.robot;
             
             r1Traj = jtraj(start_q_rob1,end_q_rob1,self.trsteps);
-            % r2Traj = jtraj(start_q_rob2,end_q_rob2,trsteps);
+            r2Traj = jtraj(start_q_rob2,end_q_rob2,self.trsteps);
 
             for i = 1:self.trsteps
                 % r2.model.fkine(UR3.model.getpos)
                 self.rob1.model.animate(r1Traj(i,:));
-                % self.rob2.model.animate(r2Traj(i,:));
+                self.rob2.model.animate(r2Traj(i,:));
                 % self.update_gripper_pos();
                 self.moveGripper1(gripper);
+                self.moveGripper2(gripper);
                 % collision_check = self.checkCollisions();
                 % if collision_check == 1
                 %     disp("collision detected!!!")
@@ -274,7 +301,9 @@ classdef Lab_assignment_2 < handle
         function pickApples(self,fig)
             figure(fig);
             hold on
-            num_items = size(self.AppleInitial);
+            rob1applessize = size(self.rob1Apples);
+            rob2applessize = size(self.rob2Apples);
+            num_items = max(rob1applessize(2),rob2applessize(2));
             % num_items = size(self.test_multiple_pos);
 % Idea for how to have both robots picking up apples at the same time:
 % Have one big matrix for the positions of the apples and in that matrix
@@ -285,7 +314,7 @@ classdef Lab_assignment_2 < handle
 %   transform for item position, false;
 %   transform for item position, false]
 
-            for i = 1:num_items(1,2)
+            for i = 1:num_items
                 self.current_item = i;
                 for pick_place = 1:2 % pick apple = 1, place apple = 2
                     currentFigure = gcf;
@@ -293,19 +322,42 @@ classdef Lab_assignment_2 < handle
                     disp(figureName);
 
                     % Get current position and the q at that position
-                    qPos1 = self.rob1.model.getpos();
+                    rob1qPos1 = self.rob1.model.getpos();
+                    rob2qPos1 = self.rob2.model.getpos();
 
-                    disp(["The current apple is number: ",i]);
-                    disp("The current apple being picked has the transform: ");
+                    % disp(["The current apple is number: ",i]);
+                    % disp("The current apple being picked has the transform: ");
                     if pick_place == 1
-                        gripper_pos = self.AppleInitial{i} * trotx(-pi/2) * transl(0, 0, -0.05);
-                        disp(self.AppleInitial{i});
-                        qPos2 = self.transformation2Q_rob1(gripper_pos,self.rob1PickInitialGuess);
+                        if i > rob1applessize(2)
+                            rob1qPos2 = [-90 -90 0 0 0 0];
+                        else
+                            gripper_pos = self.rob1Apples{i} * trotx(-pi/2) * transl(0, 0, -0.05);
+                            % disp(self.AppleInitial{i});
+                            rob1qPos2 = self.transformation2Q_rob1(gripper_pos,self.rob1PickInitialGuess);
+                        end
+
+                        if i > rob2applessize(2)
+                            rob2qPos2 = [0 0 0 0 0 0];
+                        else
+                            gripper_pos = self.rob2Apples{i} * trotx(-pi/2) * transl(0, 0, -0.05);
+                            rob2qPos2 = self.transformation2Q_rob2(gripper_pos,self.rob2PickInitialGuess);
+                        end
                     elseif pick_place == 2
-                        gripper_pos = self.AppleFinal{i} * transl(0, 0, -0.13);
-                        disp(self.AppleFinal{i});
-                        qPos2 = self.transformation2Q_rob1(gripper_pos,self.rob1PlaceInitialGuess);
-                        % qPos2 = self.rob1.model.ikcon(gripper_pos); %,[-4.2672,-0.0367,1.2988,-2.7664,4.7124,-2.6964]);
+                        if i > rob1applessize(2)
+                            rob1qPos2 = [-90 -90 0 0 0 0];
+                        else
+                            gripper_pos = self.AppleFinal{i} * transl(0, 0, -0.13);
+                            % disp(self.AppleFinal{i});
+                            rob1qPos2 = self.transformation2Q_rob1(gripper_pos,self.rob1PlaceInitialGuess);
+                            % qPos2 = self.rob1.model.ikcon(gripper_pos); %,[-4.2672,-0.0367,1.2988,-2.7664,4.7124,-2.6964]);
+                        end
+
+                        if i > rob2applessize(2)
+                            rob2qPos2 = [0 0 0 0 0 0];
+                        else
+                            gripper_pos = self.AppleFinal{end+1-i} * transl(0, 0, -0.13);
+                            rob2qPos2 = self.transformation2Q_rob2(gripper_pos,self.rob2PlaceInitialGuess);
+                        end
                     end
                     % Gripper positioned z + 0.09 of brick.
                     % gripper_pos = self.items_pos{i};
@@ -316,15 +368,22 @@ classdef Lab_assignment_2 < handle
                     % Open gripper and transform between current position and
                     % starting brick position
                     % self.open_gripper();
-                    self.transform_interpolation(qPos1,qPos2,qPos1,qPos2,pick_place);
+                    self.transform_interpolation(rob1qPos1,rob1qPos2,rob2qPos1,rob2qPos2,pick_place);
 
                     self.opencloseGripper1(pick_place);
+                    self.opencloseGripper2(pick_place);
 
                 end
 
                 figure(fig);
-                delete(self.Apples(i,1));
-                self.Apples(i,1) = PlaceObject('NewApple.ply',self.PlaceApples(i,:));
+                if i <= rob1applessize(2)
+                    delete(self.Apples(i,1));
+                    self.Apples(i,1) = PlaceObject('NewApple.ply',self.PlaceApples(i,:));
+                end
+                if i <= rob2applessize(2)
+                    delete(self.Apples(end+1-i,1));
+                    self.Apples(end+1-i,1) = PlaceObject('NewApple.ply',self.PlaceApples(end+1-i,:));
+                end
                 drawnow;
             end
 
@@ -621,7 +680,7 @@ classdef Lab_assignment_2 < handle
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
             FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0 0.5]);
-            emergencyStopButton = PlaceObject('emergencyStopButton', [1.6 0 0.7]);
+            emergencyStopButton = PlaceObject('emergencyStopButton.ply', [1.6 0 0.7]);
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
             self.rob2.model.base = transl([0.62 0.15 0.75]) * trotz(pi/2);
