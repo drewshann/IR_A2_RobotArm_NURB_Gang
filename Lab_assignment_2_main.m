@@ -26,14 +26,15 @@ final_q = obj.transformation2Q_rob1(final_pos, start_q);
 % final_q = obj.transformation2Q_rob1(final_pos);
 % disp("Does it get to here?");
 
-% obj.transform_interpolation(start_q,final_q,start_q,start_q,1);
+obj.transform_interpolation(start_q,final_q,start_q,start_q,1);
 
-i = 0;
-while(i < 100)
-    obj.RMRC_Jogging([0.01,0.01,0.01],[0.5,0,0]);
-    
-    disp(i);
-    i = i+1;
-
-end
-disp(i);
+% 
+% i = 0;
+% while(i < 100)
+%     obj.RMRC_Jogging([0.01,0.01,0.01],[0.5,0,0]);
+% 
+%     disp(i);
+%     i = i+1;
+% 
+% end
+% disp(i);
