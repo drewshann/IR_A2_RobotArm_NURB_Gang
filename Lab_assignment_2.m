@@ -243,11 +243,11 @@ end
                     self.moveGripper1(gripper);
                     self.moveGripper2(gripper);
 
-                    % collision_check = self.checkCollisions();
-                    % if collision_check == 1
-                    %     disp("collision detected!!!")
-                    %     break
-                    % end
+                    collision_check = self.checkCollisions();
+                    if collision_check == 1
+                        disp("collision detected!!!")
+                        break
+                    end
                 else 
                     disp('Estop Triggered')
                     input('Once work environent is safe press ENTER to resume operation')
