@@ -675,7 +675,7 @@ classdef Lab_assignment_2 < handle
     end
 
 
-    function RMRC_Jogging(self,linear,angular)
+    function rob1_RMRC_Jogging(self,linear,angular)
         % Have to input a "weighting" for movement linear and angular.
         % E.g. if linear [1,1,1] is entered, then the movement will make
         % increments of 1 in all three axes per function call.
@@ -705,7 +705,7 @@ classdef Lab_assignment_2 < handle
         
         % 2 - use simple admittance scheme to convert force measurement into
         % velocity command
-        Ka = diag(ones(1,6)); % admittance gain matrix  
+        Ka = diag([0.5,0.5,0.5,ones(1,3)]); % admittance gain matrix  
         dx = Ka*f; % convert wrench into end-effector velocity command
         
         % 2 - use DLS J inverse to calculate joint velocity
@@ -723,8 +723,57 @@ classdef Lab_assignment_2 < handle
         self.rob1.model.animate(q); 
         drawnow();
 
+    end
 
-    
+
+    function rob2_RMRC_Jogging(self,linear,angular)
+        % Have to input a "weighting" for movement linear and angular.
+        % E.g. if linear [1,1,1] is entered, then the movement will make
+        % increments of 1 in all three axes per function call.
+
+        % 1.1) Set parameters for the simulation
+        self.rob2.model.tool = transl(0,0,0);
+        q = self.rob2.model.getpos;
+        
+        self.rmrc_step=self.rmrc_step+1; % increment step count
+        
+        % get values from the gui
+        linear_motion = linear;
+        angular_motion = angular;
+           
+        % -------------------------------------------------------------
+        % YOUR CODE GOES HERE
+        % 1 - turn joystick input into an end-effector force measurement  
+        fx = linear_motion(1);
+        fy = linear_motion(2);
+        fz = linear_motion(3);
+        
+        tx = angular_motion(1);
+        ty = angular_motion(2);
+        tz = angular_motion(3);
+        
+        f = [fx;fy;fz;tx;ty;tz]; % combined force-torque vector (wrench)
+        
+        % 2 - use simple admittance scheme to convert force measurement into
+        % velocity command
+        Ka = diag([0.5,0.5,0.5,ones(1,3)]); % admittance gain matrix  
+        dx = Ka*f; % convert wrench into end-effector velocity command
+        
+        % 2 - use DLS J inverse to calculate joint velocity
+        J = self.rob2.model.jacobe(q);
+        
+        lambda = 0.1;
+        Jinv_dls = inv((J'*J)+lambda^2*eye(6))*J';
+        dq = Jinv_dls*dx;
+        
+        % 3 - apply joint velocity to step robot joint angles
+        q = q + dq';
+        % -------------------------------------------------------------
+        
+        % Update plot
+        self.rob2.model.animate(q); 
+        drawnow();
+
     end
 
     %% Environment Setup

@@ -52,6 +52,9 @@ classdef GraphicalUserInterface
         P1downbuttonZ;
         P1opengrip;
         P1closegrip;
+        P1startRMRC;
+        P1stopRMRC;
+        P1RMRC = 0;
 
         P2slider1;
         P2slider2;
@@ -85,10 +88,13 @@ classdef GraphicalUserInterface
         P2downbuttonZ;
         P2opengrip;
         P2closegrip;
+        P2startRMRC;
+        P2stopRMRC;
+        P2RMRC;
     end
 
     properties(Constant)
-        increment = 0.1;
+        increment = 0.01;
     end
     
     methods
@@ -178,35 +184,39 @@ classdef GraphicalUserInterface
             obj.P1panel4 = uipanel(obj.fig2,'Position',[0.72 0.59 0.23 0.3475],'Title','X-Y-Z','BorderType','beveledin','TitlePosition','centertop');
             obj.P2panel5 = uipanel(obj.fig2,'Position',[0.72 0.1025 0.23 0.3475],'Title','X-Y-Z','BorderType','beveledin','TitlePosition','centertop');
 
-            obj.P1textX = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.77, 0.83, 0.03, 0.04], 'String', 'x:');
-            obj.P1textY = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.77, 0.73, 0.03, 0.04], 'String', 'y:');
-            obj.P1textZ = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.77, 0.63, 0.03, 0.04], 'String', 'z:');
-            obj.P1editX = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.8, 0.825, 0.075, 0.05], 'String', 0);
-            obj.P1editY = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.8, 0.725, 0.075, 0.05], 'String', 0);
-            obj.P1editZ = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.8, 0.625, 0.075, 0.05], 'String', 0);
-            obj.P1upbuttonX = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.875 0.85 0.035 0.025]);
-            obj.P1downbuttonX = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.875 0.825 0.035 0.025]);
-            obj.P1upbuttonY = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.875 0.75 0.035 0.025]);
-            obj.P1downbuttonY = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.875 0.725 0.035 0.025]);
-            obj.P1upbuttonZ = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.875 0.65 0.035 0.025]);
-            obj.P1downbuttonZ = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.875 0.625 0.035 0.025]);
+            obj.P1textX = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.73, 0.83, 0.03, 0.04], 'String', 'x:');
+            obj.P1textY = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.73, 0.73, 0.03, 0.04], 'String', 'y:');
+            obj.P1textZ = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.73, 0.63, 0.03, 0.04], 'String', 'z:');
+            obj.P1editX = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.76, 0.825, 0.075, 0.05], 'String', 0);
+            obj.P1editY = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.76, 0.725, 0.075, 0.05], 'String', 0);
+            obj.P1editZ = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.76, 0.625, 0.075, 0.05], 'String', 0);
+            obj.P1upbuttonX = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.835 0.85 0.035 0.025]);
+            obj.P1downbuttonX = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.835 0.825 0.035 0.025]);
+            obj.P1upbuttonY = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.835 0.75 0.035 0.025]);
+            obj.P1downbuttonY = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.835 0.725 0.035 0.025]);
+            obj.P1upbuttonZ = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.835 0.65 0.035 0.025]);
+            obj.P1downbuttonZ = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.835 0.625 0.035 0.025]);
             obj.P1opengrip = uicontrol('Style','pushbutton','String',"Open Gripper",'Units', 'normalized', 'Position', [0.715 0.53 0.12 0.05]);
             obj.P1closegrip = uicontrol('Style','pushbutton','String',"Close Gripper",'Units', 'normalized', 'Position', [0.835 0.53 0.12 0.05]);
+            obj.P1startRMRC = uicontrol('Style','pushbutton','String',"START RMRC",'FontSize',4,'Units', 'normalized', 'Position', [0.885 0.75 0.05 0.05]);
+            obj.P1stopRMRC = uicontrol('Style','pushbutton','String',"STOP RMRC",'FontSize',4,'Units', 'normalized', 'Position', [0.885 0.65 0.05 0.05]);
 
-            obj.P2textX = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.77, 0.3425, 0.03, 0.04], 'String', 'x:');
-            obj.P2textY = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.77, 0.2425, 0.03, 0.04], 'String', 'y:');
-            obj.P2textZ = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.77, 0.1425, 0.03, 0.04], 'String', 'z:');
-            obj.P2editX = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.8, 0.3375, 0.075, 0.05], 'String', 0);
-            obj.P2editY = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.8, 0.2375, 0.075, 0.05], 'String', 0);
-            obj.P2editZ = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.8, 0.1375, 0.075, 0.05], 'String', 0);
-            obj.P2upbuttonX = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.875 0.3625 0.035 0.025]);
-            obj.P2downbuttonX = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.875 0.3375 0.035 0.025]);
-            obj.P2upbuttonY = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.875 0.2625 0.035 0.025]);
-            obj.P2downbuttonY = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.875 0.2375 0.035 0.025]);
-            obj.P2upbuttonZ = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.875 0.1625 0.035 0.025]);
-            obj.P2downbuttonZ = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.875 0.1375 0.035 0.025]);
+            obj.P2textX = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.73, 0.3425, 0.03, 0.04], 'String', 'x:');
+            obj.P2textY = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.73, 0.2425, 0.03, 0.04], 'String', 'y:');
+            obj.P2textZ = uicontrol('Style', 'text', 'Units', 'normalized', 'Position', [0.73, 0.1425, 0.03, 0.04], 'String', 'z:');
+            obj.P2editX = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.76, 0.3375, 0.075, 0.05], 'String', 0);
+            obj.P2editY = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.76, 0.2375, 0.075, 0.05], 'String', 0);
+            obj.P2editZ = uicontrol('Style', 'edit', 'Units', 'normalized', 'Position', [0.76, 0.1375, 0.075, 0.05], 'String', 0);
+            obj.P2upbuttonX = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.835 0.3625 0.035 0.025]);
+            obj.P2downbuttonX = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.835 0.3375 0.035 0.025]);
+            obj.P2upbuttonY = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.835 0.2625 0.035 0.025]);
+            obj.P2downbuttonY = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.835 0.2375 0.035 0.025]);
+            obj.P2upbuttonZ = uicontrol('Style','pushbutton','String',"▲",'FontSize',5,'Units','normalized','Position',[0.835 0.1625 0.035 0.025]);
+            obj.P2downbuttonZ = uicontrol('Style','pushbutton','String',"▼",'FontSize',5,'Units','normalized','Position',[0.835 0.1375 0.035 0.025]);
             obj.P2opengrip = uicontrol('Style','pushbutton','String',"Open Gripper",'Units', 'normalized', 'Position', [0.715 0.0425 0.12 0.05]);
             obj.P2closegrip = uicontrol('Style','pushbutton','String',"Close Gripper",'Units', 'normalized', 'Position', [0.835 0.0425 0.12 0.05]);
+            obj.P2startRMRC = uicontrol('Style','pushbutton','String',"START RMRC",'FontSize',4,'Units', 'normalized', 'Position', [0.885 0.28 0.05 0.05]);
+            obj.P2stopRMRC = uicontrol('Style','pushbutton','String',"STOP RMRC",'FontSize',4,'Units', 'normalized', 'Position', [0.885 0.18 0.05 0.05]);
         end
 
         function setupCallbacks(obj)
@@ -228,6 +238,8 @@ classdef GraphicalUserInterface
             addlistener(obj.P1downbuttonY, 'Value', 'PostSet', @obj.P1downYCallback);
             addlistener(obj.P1upbuttonZ, 'Value', 'PostSet', @obj.P1upZCallback);
             addlistener(obj.P1downbuttonZ, 'Value', 'PostSet', @obj.P1downZCallback);
+            addlistener(obj.P1startRMRC, 'Value', 'PostSet', @obj.P1RMRCstart);
+            addlistener(obj.P1stopRMRC, 'Value', 'PostSet', @obj.P1RMRCstop);
             addlistener(obj.P1opengrip, 'Value', 'PostSet', @obj.P1openGripper);
             addlistener(obj.P1closegrip, 'Value', 'PostSet', @obj.P1closeGripper);
 
@@ -237,6 +249,8 @@ classdef GraphicalUserInterface
             addlistener(obj.P2downbuttonY, 'Value', 'PostSet', @obj.P2downYCallback);
             addlistener(obj.P2upbuttonZ, 'Value', 'PostSet', @obj.P2upZCallback);
             addlistener(obj.P2downbuttonZ, 'Value', 'PostSet', @obj.P2downZCallback);
+            addlistener(obj.P2startRMRC, 'Value', 'PostSet', @obj.P2RMRCstart);
+            addlistener(obj.P2stopRMRC, 'Value', 'PostSet', @obj.P2RMRCstop);
             addlistener(obj.P2opengrip, 'Value', 'PostSet', @obj.P2openGripper);
             addlistener(obj.P2closegrip, 'Value', 'PostSet', @obj.P2closeGripper);
 
@@ -269,10 +283,12 @@ classdef GraphicalUserInterface
 
         function estopButtonCallback(obj,~,~)
             % Emergency stop implementation
+            obj.assignment.EmergencyFlag = True;
         end
 
         function resumeButtonCallback(obj,~,~)
             % Begin from where we stoped or paused implementation
+            obj.assignment.EmergencyFlag = False;
         end
 
         function resetButtonCallback(obj,~,~)
@@ -357,6 +373,23 @@ classdef GraphicalUserInterface
         function P1downZCallback(obj,~,~)
             set(obj.P1editZ, 'String', num2str(str2double(get(obj.P1editZ, 'String')) - obj.increment));
         end
+        function obj = P1RMRCstart(obj,~,~)
+            obj.P1RMRC = 1;
+            while obj.P1RMRC == 1
+                X = str2double(get(obj.P1editX, 'String'));
+                Y = str2double(get(obj.P1editY, 'String'));
+                Z = str2double(get(obj.P1editZ, 'String'));
+
+                obj.assignment.rob1_RMRC_Jogging([X,Y,Z],[0 0 0]);
+                obj.assignment.moveGripper1(1);
+            end
+        end
+        function obj = P1RMRCstop(obj,~,~)
+            obj.P1RMRC = 0;
+            set(obj.P1editX, 'String', "0");
+            set(obj.P1editY, 'String', "0");
+            set(obj.P1editZ, 'String', "0");
+        end
         function P1openGripper(obj,~,~)
             obj.assignment.opencloseGripper1(2);
         end
@@ -381,6 +414,23 @@ classdef GraphicalUserInterface
         end
         function P2downZCallback(obj,~,~)
             set(obj.P2editZ, 'String', num2str(str2double(get(obj.P2editZ, 'String')) - obj.increment));
+        end
+        function obj = P2RMRCstart(obj,~,~)
+            obj.P2RMRC = 1;
+            while obj.P2RMRC == 1
+                X = str2double(get(obj.P2editX, 'String'));
+                Y = str2double(get(obj.P2editY, 'String'));
+                Z = str2double(get(obj.P2editZ, 'String'));
+
+                obj.assignment.rob2_RMRC_Jogging([X,Y,Z],[0 0 0]);
+                obj.assignment.moveGripper2(1);
+            end
+        end
+        function obj = P2RMRCstop(obj,~,~)
+            obj.P2RMRC = 0;
+            set(obj.P2editX, 'String', "0");
+            set(obj.P2editY, 'String', "0");
+            set(obj.P2editZ, 'String', "0");
         end
         function P2openGripper(obj,~,~)
             obj.assignment.opencloseGripper2(2);
