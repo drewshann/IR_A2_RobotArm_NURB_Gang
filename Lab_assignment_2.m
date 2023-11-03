@@ -151,6 +151,8 @@ classdef Lab_assignment_2 < handle
                 end
             else
                 disp('Estop triggered')
+                input('Once work environent is safe press ENTER to resume operation')
+                self.EmergencyFlag = false;
             end
 
         end
@@ -158,6 +160,9 @@ classdef Lab_assignment_2 < handle
         % If the emergencyFlag is true we deal with that here
         
         disp('Emergency flag is set. function was in assignApples.');
+        input('Once work environent is safe press ENTER to resume operation')
+        self.EmergencyFlag = false;
+
     end
 end
 
@@ -171,6 +176,9 @@ end
         end
     else
         disp('Emergency stop engaged. Program was in transformation2Q_rob1.');
+        input('Once work environent is safe press ENTER to resume operation')
+        self.EmergencyFlag = false;
+
         %q1 = [];  Do we need to zero q1?
     end
 end
@@ -183,7 +191,9 @@ end
         end
     else
         disp('Emergency stop engaged. Pragram was in transformation2Q_rob2.');
-        q2 = [];  % Return an empty array or handle according to your requirements
+        input('Once work environent is safe press ENTER to resume operation')
+        self.EmergencyFlag = false;
+        %q2 = [];  
     end
 end
 
@@ -221,6 +231,8 @@ end
                     end
                 else 
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end
 
                 drawnow()
@@ -260,6 +272,8 @@ end
                 theta(3,i) = 0;%RPY_start(1,3);%0;                 % Yaw angle
                 else
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end
                 
             end
@@ -305,6 +319,8 @@ end
                         end
                         else
                             disp('Estop Triggered')
+                            input('Once work environent is safe press ENTER to resume operation')
+                            self.EmergencyFlag = false;
                         end
                     end
                     qMatrix(i+1,:) = qMatrix(i,:) + deltaT*qdot(i,:);                         	% Update next joint state based on joint velocities
@@ -313,6 +329,8 @@ end
                     % keyboard
                 else
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end
             end
             
@@ -330,6 +348,8 @@ end
                 drawnow();
                 else
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end
             end
             
@@ -429,6 +449,8 @@ end
                 drawnow;
                 else
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end
             end
 
@@ -501,6 +523,8 @@ end
                 % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
                 else
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end 
             end
 
@@ -682,6 +706,8 @@ end
                     end
                     else
                         disp('Estop Triggered')
+                        input('Once work environent is safe press ENTER to resume operation')
+                        self.EmergencyFlag = false;
                     end
                 end
 
@@ -822,6 +848,8 @@ end
                 Transform = Transform * linksArray{i};
                 else
                     disp('Estop Triggered')
+                    input('Once work environent is safe press ENTER to resume operation')
+                    self.EmergencyFlag = false;
                 end
             end
 
@@ -918,6 +946,8 @@ end
             drawnow;
             else
                 disp('Estop Triggered')
+                input('Once work environent is safe press ENTER to resume operation')
+                self.EmergencyFlag = false;
             end
         end
     end
@@ -937,6 +967,8 @@ end
             drawnow;
             else
                 disp('Estop Triggered')
+                input('Once work environent is safe press ENTER to resume operation')
+                self.EmergencyFlag = false;
             end
         end
     end
