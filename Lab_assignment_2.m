@@ -883,8 +883,15 @@ end
             Tree1 = PlaceObject('NewTree.ply',[-0.5 1.4 0]);
             Tree2 = PlaceObject('NewTree.ply',[0.5 1.4 0]);
             Tree3 = PlaceObject('NewTree.ply',[1.5 1.4 0]);
-            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.5 0.22 0.4]);
+            FireExtinguisher = PlaceObject('fireExtinguisher.ply',[1.9 0.22 0.4]);
             emergencyStopButton = PlaceObject('emergencyStopButton.ply', [1.6 -0.3 0.4]);
+            fencestuff = PlaceObject('barrier1.5x0.2x1m.ply', [0 1 -0.2]);
+            fencestuff2 = PlaceObject('barrier1.5x0.2x1m.ply', [1.6 1 -0.2]);
+            fencestuff3 = PlaceObject('barrier1.5x0.2x1m.ply', [-1.6 1 -0.2]);
+            fencestuff4 = PlaceObject('barrier1.5x0.2x1m.ply', [0 -1 -0.2]);
+            fencestuff5 = PlaceObject('barrier1.5x0.2x1m.ply', [1.6 -1 -0.2]);
+            fencestuff6 = PlaceObject('barrier1.5x0.2x1m.ply', [-1.6 -1 -0.2]);
+
 
             self.rob1.model.base = transl([0.65 0.4 0.75]);
             self.rob2.model.base = transl([0.62 0.15 0.75]) * trotz(pi/2);
