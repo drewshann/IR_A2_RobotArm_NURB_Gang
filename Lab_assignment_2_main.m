@@ -30,7 +30,7 @@ final_q = obj.transformation2Q_rob1(final_pos, start_q);
 
 i = 0;
 while(i < 100)
-    obj.RMRC_Jogging_test([1,1,1],[0.5,0,0]);
+    obj.RMRC_Jogging([0.01,0.01,0.01],[0.5,0,0]);
     
     disp(i);
     i = i+1;

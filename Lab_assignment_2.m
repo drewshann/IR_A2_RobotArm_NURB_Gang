@@ -17,6 +17,8 @@ classdef Lab_assignment_2 < handle
         robot;
         Truck;
         rmrc_step;
+        rob1_link_points;
+        rob2_link_points;
     end
 
     properties(Constant)
@@ -104,6 +106,8 @@ classdef Lab_assignment_2 < handle
                 self.rob2 = KUKAKR;
                 
                 self.rmrc_step = 0;
+                self.rob1_link_points = cell(1,6);
+                self.rob2_link_points = cell(1,6);
                 self.items_pos = self.test_multiple_pos;
                 self.AppleInitial = {transl(0, 1, 1), ...
                                      transl(0.3, 1.3, 0.7), ...
@@ -386,6 +390,7 @@ classdef Lab_assignment_2 < handle
                 hold on
                 EllipsoidPointsAndOnes = [midpoints{i} * [EllipsoidPoints,ones(size(EllipsoidPoints,1),1)]']';
                 updatedEllipsoidPoints = EllipsoidPointsAndOnes(:,1:3);
+                self.rob1_link_points{i} = updatedEllipsoidPoints;
                 % plot3(updatedEllipsoidPoints(:,1), EllipsoidPointsAndOnes(:,2), EllipsoidPointsAndOnes(:,3));
             end
             
